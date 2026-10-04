@@ -1255,13 +1255,17 @@ ACTIONS['settings-reload'] = function () { loadSettings(); };
 var HUB_URL = 'https:' + '/' + '/phillyfaibs.github.io/knights-hub/';
 ACTIONS['select-url'] = function (t) { t.select(); };
 ACTIONS['copy-url'] = function () {
-var el = document.getElementById('hub-url');
-var ok = false;
-if (el) { el.focus(); el.select(); try { ok = document.execCommand('copy'); } catch (e) { ok = false; } }
-if (ok) { toast('Knights Hub link copied'); return; }
-if (navigator.clipboard && navigator.clipboard.writeText) {
-navigator.clipboard.writeText(HUB_URL).then(function () { toast('Knights Hub link copied'); }, function () { toast('Link selected, press Cmd+C to copy', 'error'); });
-} else toast('Link selected, press Cmd+C to copy', 'error');
+var done = function () { toast('Knights Hub link copied'); };
+var fallback = function () {
+var ta = document.createElement('textarea');
+ta.value = HUB_URL; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+document.body.appendChild(ta); ta.select();
+var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+ta.remove();
+if (ok) done(); else toast('Could not copy. The link is ' + HUB_URL, 'error');
+};
+if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(HUB_URL).then(done, fallback);
+else fallback();
 };
 function loadSettings() {
 return api('admin.get').then(function (d) { S.adminData = d; drawSettings(); if (!S.activity) loadActivity(); }, function (e) {
@@ -1284,7 +1288,7 @@ S.bdDraft = bd;
 mount(el, html`
 <div class="card"><div class="card-head"><h2>${icon('star')} People and roles</h2><span class="small muted">${counts.Admin} admin · ${counts.Coach} coaches · ${counts.Parent} parents</span></div>
 <p class="small muted" style="margin-top:0">Admins see this page. Coaches give awards, fill in game sheets and see full names and birthdays. Parents see jersey numbers and first names only. People need a Google account with this email to sign in.</p>
-<div style="display:flex;gap:8px;align-items:center;margin:0 0 14px"><input type="text" readonly id="hub-url" value="${HUB_URL}" style="flex:1;min-width:0" data-act="select-url"><button class="btn small gold" data-act="copy-url">${icon('chain', 14)} Copy Knights Hub link</button></div>
+<div style="margin:0 0 14px"><button class="btn small gold" data-act="copy-url">${icon('chain', 14)} Copy Knights Hub link</button></div>
 <div class="person head"><span>Name</span><span>Google email</span><span>Role</span><span>Active</span><span></span></div>
 <div class="person"><b>You (owner)</b><span class="small">${d.owner}</span><span class="chip admin-badge" style="justify-self:start">Admin</span><span class="small muted">Always</span><span></span></div>
 ${d.people.map(function (p) {
