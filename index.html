@@ -11,7 +11,20 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Knights Hub">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Knights Hub">
+<meta property="og:title" content="Knights Hub · Vaughan Golden Knights">
+<meta property="og:description" content="U10/U11 house league: schedule, scores and weekly awards.">
+<meta property="og:url" content="https://phillyfaibs.github.io/knights-hub/">
+<meta property="og:image" content="https://phillyfaibs.github.io/knights-hub/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Vaughan Rangers Golden Knights U10 U11 house league logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://phillyfaibs.github.io/knights-hub/og-image.jpg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
@@ -431,6 +444,17 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 .signin-err { color: #ffb4b4; font-weight: 700; margin: 12px 0 0; position: relative; }
 .signin-note { display: flex; gap: 6px; align-items: center; font-size: 12px; color: rgba(244,239,227,.6); margin: 14px 0 0; position: relative; }
 .signin-note + .signin-note { margin-top: 6px; }
+
+.mark.logo { background: none; box-shadow: none; border-radius: 0; }
+.mark.logo img { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 4px 10px rgba(0,0,0,.28)); }
+.side-brand .mark.logo { width: 52px; height: 52px; }
+.topbar .mark.logo { width: 38px; height: 38px; }
+.hero .mark.logo { width: 92px; height: 92px; }
+.signin { text-align: center; }
+.signin-logo { position: relative; display: flex; justify-content: center; margin: -4px 0 4px; }
+.signin-logo img { width: min(230px, 62vw); height: auto; filter: drop-shadow(0 10px 24px rgba(0,0,0,.45)); }
+.signin .signin-btn, .signin .signin-note { justify-content: center; }
+.signin .signin-h { margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -440,7 +464,7 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 <div class="shell">
 <aside class="sidebar" aria-label="Main navigation">
 <div class="side-brand">
-<div class="mark">GK</div>
+<div class="mark logo"><img src="logo-160.webp" alt="Golden Knights logo"></div>
 <div class="brand-text">
 <strong>Knights Hub</strong>
 <span>Vaughan Golden Knights</span>
@@ -451,7 +475,7 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 </aside>
 <div class="main-col">
 <div class="topbar">
-<div class="mark">GK</div>
+<div class="mark logo"><img src="logo-160.webp" alt="Golden Knights logo"></div>
 <strong>Knights Hub</strong>
 <span id="top-tools"></span>
 </div>
@@ -568,7 +592,7 @@ window.gsiReady = function () { if (S.needSignIn) gsiButton(); };
 function signInView() {
 var a = S.boot.app;
 return html`<div class="signin-wrap"><div class="card hero signin">
-<div class="hero-top"><div class="mark">GK</div><div><div class="eyebrow">${a.division} · ${a.season}</div><h1>${a.team}</h1></div></div>
+<div class="signin-logo"><img src="logo-512.webp" alt="Vaughan Rangers Golden Knights logo"></div>
 <h2 class="signin-h">Welcome to Knights Hub</h2>
 <p class="signin-p">Our team's schedule, scores and weekly awards in one place. Sign in with the Google account your coach added.</p>
 <div class="signin-btn">${S.signingIn ? html`<span class="spinner"></span> <span style="color:#F4EFE3">Signing you in...</span>` : html`<div id="gsi-btn"></div>`}</div>
@@ -705,7 +729,7 @@ var app = document.getElementById('app');
 if (S.boot.error && !S.model) {
 var er = S.boot.error, noAccess = er.code === 'NO_ACCESS';
 mount(app, html`<div class="card hero" style="max-width:560px;margin:40px auto">
-<div class="hero-top"><div class="mark">GK</div><div><div class="eyebrow">Knights Hub</div><h1>${noAccess ? 'You are not on the list yet' : 'Knights Hub could not start'}</h1></div></div>
+<div class="hero-top"><div class="mark logo"><img src="logo-160.webp" alt="Golden Knights logo"></div><div><div class="eyebrow">Knights Hub</div><h1>${noAccess ? 'You are not on the list yet' : 'Knights Hub could not start'}</h1></div></div>
 <p style="margin-top:16px;color:rgba(244,239,227,.85)">${er.message}</p>
 ${noAccess ? html`<p style="color:rgba(244,239,227,.7)">Send this email address to a coach so they can add you: <b style="color:#fff">${S.boot.email || 'your Google account email'}</b>. If you use more than one Google account, make sure you are signed in with the right one.</p>` : ''}
 <p><button class="btn small" data-act="sign-out">Use a different Google account</button></p>
@@ -900,7 +924,7 @@ ${scoreBlock(last)}<div class="small muted" style="margin-top:8px">${scorerLine(
 return html`${bdayBanner()}
 ${welcomeCard()}
 <div class="card hero">
-<div class="hero-top"><div class="mark">GK</div><div><div class="eyebrow">${S.boot.app.division} · ${S.boot.app.season}</div><h1>${S.boot.app.team}</h1></div></div>
+<div class="hero-top"><div class="mark logo"><img src="logo-160.webp" alt="Golden Knights logo"></div><div><div class="eyebrow">${S.boot.app.division} · ${S.boot.app.season}</div><h1>${S.boot.app.team}</h1></div></div>
 <div class="record">
 <div><b class="gold">${t.w}-${t.l}-${t.t}</b><span>Record</span></div>
 <div><b>${t.gf}</b><span>Goals for</span></div>
