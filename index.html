@@ -903,7 +903,7 @@ return html`<div class="row"><span class="jn sm">${b.num}</span><span class="gro
 }
 PAGES.home = function () {
 var m = S.model, t = teamSummary();
-var upcoming = m.days.filter(function (d) { return d.ymd && d.ymd >= m.today && d.kind !== 'none' && d.kind !== 'tbd'; });
+var upcoming = m.days.filter(function (d) { return d.ymd && d.ymd >= m.today && d.kind !== 'none' && d.kind !== 'tbd' && !eventOver(d); });
 var next = upcoming[0];
 var played = m.games.filter(function (g) { return g.played; });
 var last = played[played.length - 1];
@@ -915,7 +915,7 @@ var p = ymdParts(next.ymd), g = gameForDay(next);
 return html`<div class="card"><div class="card-head"><h2>${icon('clock')} Next up</h2><span class="chip">${next.week}</span></div>
 <div class="next"><div class="next-date"><span>${p.mon}</span><b>${p.day}</b><span>${p.dow}</span></div>
 <div><div style="font-size:18px;font-weight:850">${kindLabel(next)}${next.opp && (next.kind === 'home' || next.kind === 'away') ? (next.kind === 'away' ? ' @ ' : ' vs ') + next.opp : ''}</div>
-<div class="muted">${whenText(next.ymd) || next.label}${next.start ? ' · ' + next.start : ''}</div>
+<div class="muted">${eventNow(next) ? html`<b style="color:var(--accent)">Happening now</b>` : (whenText(next.ymd) || next.label)}${next.start ? ' · ' + next.start : ''}</div>
 ${next.rink ? html`<div class="small muted" style="display:flex;gap:4px;align-items:center;margin-top:2px">${icon('pin', 13)} ${next.rink}</div>` : ''}</div></div></div>`;
 })() : html`<div class="card"><div class="card-head"><h2>${icon('clock')} Next up</h2></div><p class="muted">No more dates on the schedule yet.</p></div>`;
 var lastCard = last ? html`<div class="card tap" data-act="game" data-col="${last.col}"><div class="card-head"><h2>${icon('puck')} Last game</h2><span class="chip ${last.result}">${resultWord(last.result)}</span></div>
@@ -1240,7 +1240,7 @@ toast(e.message, 'error');
 }
 PAGES.schedule = function () {
 var all = S.schedAll;
-var list = (S.model.schedule || []).filter(function (e) { return all || e.ymd >= S.model.today; });
+var list = (S.model.schedule || []).filter(function (e) { return all || (e.ymd >= S.model.today && !eventOver(e)); });
 var gameByYmd = {};
 S.model.games.forEach(function (g) { if (g.ymd) gameByYmd[g.ymd] = g; });
 var months = [], cur = null;
@@ -1535,6 +1535,23 @@ sessClear();
 try { google.accounts.id.disableAutoSelect(); } catch (e) { /* fine */ }
 S.model = null; S.me = null; S.prompted = true; S.signErr = ''; S.needSignIn = true; render();
 };
+/* Practices and games last an hour: once today's event has ended it drops off "Next up" and Upcoming. */
+function eventMins(e) {
+var m = String(e.start || '').match(/(\d{1,2}):(\d{2})\s*([AP])M/i);
+if (!m) return null;
+return (Number(m[1]) % 12 + (/p/i.test(m[3]) ? 12 : 0)) * 60 + Number(m[2]);
+}
+function nowMins() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+function eventOver(e) {
+if (!S.model || e.ymd !== S.model.today) return false;
+var st = eventMins(e);
+return st !== null && nowMins() >= st + 60;
+}
+function eventNow(e) {
+if (!S.model || e.ymd !== S.model.today) return false;
+var st = eventMins(e);
+return st !== null && nowMins() >= st && nowMins() < st + 60;
+}
 ACTIONS['welcome-close'] = function () { lsSet('kh_welcome_done', '1'); render(); };
 ACTIONS['welcome-open'] = function () { lsSet('kh_welcome_done', null); go('home'); };
 </script>
