@@ -371,7 +371,7 @@ cursor: pointer; text-align: center; min-width: 74px;
 .ev .meta { font-size: 12px; color: var(--txt-dim); display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
 .ev .score-mini { font-weight: 850; font-size: 15px; white-space: nowrap; }
 .month-h { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; color: var(--accent); margin: 16px 4px 4px; }
-.person { display: grid; grid-template-columns: 1.1fr 1.5fr 120px 70px auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--stroke-2); }
+.person { display: grid; grid-template-columns: 1fr 1.4fr 1fr 110px 60px auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--stroke-2); }
 .person.head { border-top: 0; font-size: 11px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--txt-dim); }
 .person input[type=text], .person input[type=email], .person select, .bd-row input, .bd-row select {
 padding: 8px 10px; border-radius: 10px; border: 1px solid var(--stroke-2); background: var(--field); font-size: 14px; font-weight: 600; color: var(--txt); min-width: 0; width: 100%; }
@@ -591,7 +591,7 @@ S.needSignIn = false; S.signErr = ''; S.boot.t = s.token;
 render(true);
 api('boot').then(function (d) {
 S.me = d.me; S.boot.email = d.me.email; S.boot.error = null;
-setModel(d.model); render(true); setTimeout(trkInit, 300);
+setModel(d.model); render(true); setTimeout(trkInit, 300); setTimeout(maybeAskPlayer, 900);
 if (s.exp - Date.now() < 1728000000) api('session').then(sessSet).catch(function () {});
 }, function (e) {
 if (e.code === 'NO_SIGNIN') return;
@@ -720,7 +720,7 @@ var t = effectiveTheme();
 return html`<div class="theme-switch" role="group" aria-label="Light or dark mode"><button class="${t === 'light' ? 'on' : ''}" data-act="theme-light">${icon('sun', 15)} Light</button><button class="${t === 'dark' ? 'on' : ''}" data-act="theme-dark">${icon('moon', 15)} Dark</button></div>`;
 }
 function pageFoot() {
-return html`<footer class="page-foot">${themeSwitch()}<span class="small muted">Knights Hub${S.me ? ' · ' + S.me.email : ''}</span>${welcomeDone() ? html`<button class="link-btn" data-act="welcome-open">Show welcome tips</button>` : ''}<button class="link-btn" data-act="sign-out">Sign out</button></footer>`;
+return html`<footer class="page-foot">${themeSwitch()}<span class="small muted">Knights Hub${S.me ? ' · ' + S.me.email : ''}</span>${welcomeDone() ? html`<button class="link-btn" data-act="welcome-open">Show welcome tips</button>` : ''}${S.me && S.model ? html`<button class="link-btn" data-act="my-player">${mePlayers().length ? 'My player: ' + mePlayers().map(function (id) { return player(id).first; }).join(', ') : 'Pick my player'}</button>` : ''}<button class="link-btn" data-act="sign-out">Sign out</button></footer>`;
 }
 function eventTitle(e) {
 if (e.game) return (e.ex ? 'Exhibition' : 'Game') + (e.opp ? (e.ha === 'Away' ? ' @ ' : ' vs ') + e.opp : '');
@@ -736,11 +736,12 @@ return bits.join(' · ');
 }
 var NAV = [
 { name: 'home', label: 'Home', icon: 'home' },
+{ name: 'mine', label: 'My player', icon: 'jersey' },
 { name: 'awards', label: 'Awards', icon: 'trophy' },
 { name: 'stats', label: 'Stats', icon: 'chart' },
 { name: 'games', label: 'Games', icon: 'puck' },
 { name: 'schedule', label: 'Schedule', icon: 'calendar' },
-{ name: 'whatsapp', label: 'WhatsApp', icon: 'chat' },
+{ name: 'whatsapp', label: 'WhatsApp', icon: 'chat', top: true },
 { name: 'settings', label: 'Settings', icon: 'gear', admin: true }
 ];
 function navItems() { return NAV.filter(function (n) { return !n.admin || S.admin; }); }
@@ -778,7 +779,7 @@ var navHtml = html`${navItems().map(function (n) {
 return html`<button class="side-item ${S.route === n.name ? 'active' : ''}" data-go="${n.name}">${icon(n.icon)}<span>${n.label}</span></button>`;
 })}`;
 mount('nav', navHtml);
-mount('tabbar', html`${NAV.filter(function (n) { return !n.admin; }).map(function (n) {
+mount('tabbar', html`${NAV.filter(function (n) { return !n.admin && !n.top; }).map(function (n) {
 return html`<button class="${S.route === n.name ? 'active' : ''}" data-go="${n.name}">${icon(n.icon, 20)}<span>${n.label}</span></button>`;
 })}`);
 var themeBtn = html`<button class="icon-btn" data-act="theme" aria-label="Light or dark">${icon(effectiveTheme() === 'dark' ? 'sun' : 'moon', 16)}</button>`;
@@ -787,7 +788,7 @@ mount('side-foot', html`${badge}
 ${S.me ? html`<div class="small muted" style="overflow:hidden;text-overflow:ellipsis">${S.me.name && S.me.name !== 'Owner' ? S.me.name + ' · ' : ''}${S.me.email}</div>` : ''}
 ${themeSwitch()}
 <span class="small muted">${S.model ? 'Updated ' + timeAgo(S.model.updated) : ''}</span>`);
-mount('top-tools', html`<span style="display:flex;gap:6px;align-items:center">${badge}${S.admin ? html`<button class="icon-btn" data-go="settings" aria-label="Settings">${icon('gear', 16)}</button>` : ''}</span>`);
+mount('top-tools', html`<span style="display:flex;gap:6px;align-items:center">${badge}<button class="icon-btn" data-go="whatsapp" aria-label="Team WhatsApp group">${icon('chat', 16)}</button>${S.admin ? html`<button class="icon-btn" data-go="settings" aria-label="Settings">${icon('gear', 16)}</button>` : ''}</span>`);
 }
 document.addEventListener('click', function (ev) {
 trkActive();
@@ -1386,12 +1387,14 @@ mount(el, html`
 <div class="card"><div class="card-head"><h2>${icon('star')} People and roles</h2><span class="small muted">${counts.Admin} admin · ${counts.Coach} coaches · ${counts.Parent} parents</span></div>
 <p class="small muted" style="margin-top:0">Admins see this page. Coaches give awards, fill in game sheets and see full names and birthdays. Parents see jersey numbers and first names only. People need a Google account with this email to sign in.</p>
 <div style="margin:0 0 14px"><button class="btn small gold" data-act="copy-url">${icon('chain', 14)} Copy Knights Hub link</button></div>
-<div class="person head"><span>Name</span><span>Google email</span><span>Role</span><span>Active</span><span></span></div>
-<div class="person"><b>You (owner)</b><span class="small">${d.owner}</span><span class="chip admin-badge" style="justify-self:start">Admin</span><span class="small muted">Always</span><span></span></div>
+<p class="small muted" style="margin-top:0">Player links who each person's kid is (first names, commas for siblings). Each parent picks their own player the first time they sign in, and you can fix it here. A player can have more than one parent linked; snack reminders go to all of them.</p>
+<div class="person head"><span>Name</span><span>Google email</span><span>Player</span><span>Role</span><span>Active</span><span></span></div>
+<div class="person"><b>You (owner)</b><span class="small">${d.owner}</span><span class="small">${S.me && S.me.player && S.me.player !== 'none' ? S.me.player : '-'} <button class="link-btn" data-act="my-player">change</button></span><span class="chip admin-badge" style="justify-self:start">Admin</span><span class="small muted">Always</span><span></span></div>
 ${d.people.map(function (p) {
 return html`<div class="person ${p.active ? '' : 'inactive'}" data-person="${p.row}">
 <input type="text" value="${p.name}" placeholder="Name" data-f="name">
 <input type="email" value="${p.email}" placeholder="name@gmail.com" data-f="email">
+<input type="text" value="${p.player === 'none' ? '' : (p.player || '')}" placeholder="Kid's first name" data-f="player">
 ${roleSelect(p.role, 'data-f="role"')}
 <label class="switch"><input type="checkbox" data-f="active" ${p.active ? 'checked' : ''}></label>
 <div class="acts"><button class="btn small" data-act="person-save" data-row="${p.row}">Save</button><button class="btn small danger" data-act="person-del" data-row="${p.row}" aria-label="Remove">${icon('x', 14)}</button></div></div>`;
@@ -1399,6 +1402,7 @@ ${roleSelect(p.role, 'data-f="role"')}
 <div class="person" data-person="new" style="border-top:2px solid var(--stroke-2)">
 <input type="text" placeholder="New person's name" data-f="name">
 <input type="email" placeholder="their Google email" data-f="email">
+<input type="text" placeholder="Kid's first name" data-f="player">
 ${roleSelect('Parent', 'data-f="role"')}
 <span></span>
 <div class="acts"><button class="btn small gold" data-act="person-save" data-row="new">Add</button></div></div>
@@ -1436,7 +1440,7 @@ drawActivity();
 function personFrom(row) {
 var box = document.querySelector('[data-person="' + row + '"]');
 var g = function (f) { var x = box.querySelector('[data-f="' + f + '"]'); return x ? (x.type === 'checkbox' ? x.checked : x.value) : undefined; };
-return { row: row === 'new' ? null : Number(row), name: g('name'), email: g('email'), role: g('role'), active: row === 'new' ? true : g('active') };
+return { row: row === 'new' ? null : Number(row), name: g('name'), email: g('email'), role: g('role'), active: row === 'new' ? true : g('active'), player: g('player') };
 }
 function adminCall(name, payload, okMsg, btn) {
 if (btn) btn.disabled = true;
@@ -1651,20 +1655,26 @@ var e = (S.model.schedule || []).filter(function (x) { return x.ymd === ymd && x
 if (!e) return;
 var s = snackFor(e), p = ymdParts(e.ymd);
 if (s && !S.coach) { toast(snackName(s) + ' already has this date. Ask a coach to change it.'); return; }
-var sel = s ? s.player : (Number(lsGet('kh_family')) || '');
+var sel = s ? s.player : (mePlayers()[0] || Number(lsGet('kh_family')) || '');
 var label = S.coach ? 'Save' : 'Sign up for snacks';
 openDrawer(html`<h2>Snacks</h2>
 <div class="small muted" style="margin:4px 0 14px">${p.dow} ${p.mon} ${p.day}${e.start ? ' · ' + e.start : ''} · ${eventTitle(e)}${e.rink ? ' · ' + e.rink : ''}</div>
 <label class="field">${S.coach ? 'Family bringing snacks' : 'Which player is yours?'}<select id="sn-player"><option value="">${S.coach ? 'Nobody yet' : 'Pick your player'}</option>${sortedPlayers().map(function (pl) { return html`<option value="${pl.id}" ${pl.id === sel ? 'selected' : ''}>#${pl.num} ${pname(pl, true)}</option>`; })}</select></label>
+${S.coach ? html`<label class="field gap" id="sn-email-wrap">Parent email(s) for the reminder<input id="sn-email" type="email" multiple value="${s && s.remind ? s.remind : ''}" placeholder="parent@gmail.com, other.parent@gmail.com"><span class="small muted" style="font-weight:500">This family hasn't linked a parent account yet, so the hub doesn't know where to send their reminder. Add one or more emails, or leave it blank and the reminder comes to Coach Phil to forward.</span></label>` : ''}
 <div class="note gap">${S.coach ? (s ? 'Signed up by ' + (s.by || 'a parent') + '. ' : '') + 'Coaches can change or clear this any time.' : 'Your family brings snacks for the whole team that day. Once you sign up, only a coach can change it, so message a coach if plans change.'}</div>
 <div class="gap"><button class="btn gold wide" id="sn-save">${icon('snack', 16)} ${label}</button></div>`, function (d) {
+var ew = d.querySelector('#sn-email-wrap');
+var showEmail = function () { if (!ew) return; var v = Number(d.querySelector('#sn-player').value); ew.style.display = v && !(S.model.linked || {})[v] ? '' : 'none'; };
+showEmail();
+d.querySelector('#sn-player').onchange = showEmail;
 d.querySelector('#sn-save').onclick = function () {
 var btn = this, pid = Number(d.querySelector('#sn-player').value) || '';
+var em = ew && ew.style.display !== 'none' ? d.querySelector('#sn-email').value.trim() : '';
 if (!S.coach && !pid) { toast('Pick your player first', 'error'); return; }
 if (S.coach && !pid && !s) { closeDrawer(); return; }
 btn.disabled = true; btn.textContent = 'Saving...';
-if (!S.coach) lsSet('kh_family', String(pid));
-api(S.coach ? 'snack.set' : 'snack.claim', { ymd: e.ymd, start: e.start, player: pid }).then(function (m) {
+if (!S.coach && !mePlayers().length) lsSet('kh_family', String(pid));
+api(S.coach ? 'snack.set' : 'snack.claim', { ymd: e.ymd, start: e.start, player: pid, email: em }).then(function (m) {
 setModel(m); S.dirty = true; closeDrawer();
 toast(pid ? 'Thanks! ' + player(pid).first + "'s family has snacks on " + p.mon + ' ' + p.day : 'Snack date cleared');
 }, function (err) {
@@ -1675,6 +1685,95 @@ if (err.code === 'TAKEN') { closeDrawer(); refreshModel(true); }
 };
 });
 }
+/* ---------- My player: everyone links their own kid(s) once; snack reminders go to every linked parent. ---------- */
+function mePlayers() {
+if (!S.me || !S.model || !S.me.player || S.me.player === 'none') return [];
+var names = S.me.player.toLowerCase().split(',').map(function (x) { return x.trim(); });
+return S.model.players.filter(function (p) { return names.indexOf(p.first.toLowerCase()) >= 0; }).map(function (p) { return p.id; });
+}
+function maybeAskPlayer() {
+if (!S.me || !S.model || mePlayers().length) return;
+if (document.querySelector('.drawer')) closeDrawer();
+openPlayerPrompt(true);
+}
+ACTIONS['my-player'] = function () { openPlayerPrompt(false); };
+function openPlayerPrompt(first) {
+var picked = {};
+mePlayers().forEach(function (id) { picked[id] = true; });
+openDrawer(html`<h2>${first ? 'Welcome! Who is your player?' : 'Your player'}</h2>
+<p class="small muted" style="margin:4px 0 14px">Tap your child to finish setting up. Pick more than one if you have siblings on the team. This sets up your My player page, snack sign-ups and snack reminder emails. Each parent picks on their own account, so both parents can link the same player.</p>
+<div class="st-grid">${sortedPlayers().map(function (p) {
+return html`<button type="button" class="st-chip ${picked[p.id] ? 'on F' : ''}" data-pick="${p.id}"><span class="jn sm">${p.num}</span><span class="st-name">${pname(p, true)}</span></button>`;
+})}</div>
+<div class="gap"><button class="btn gold wide" id="pp-save">Save</button></div>
+${first ? html`<p class="small muted" style="text-align:center;margin:12px 0 0">Questions? Ask Coach Phil.</p>` : ''}`, function (d) {
+if (first) {
+var cl = d.querySelector('[data-close]'); if (cl) cl.remove();
+var back = document.querySelector('.drawer-back'); if (back) back.onclick = null;
+}
+d.querySelectorAll('[data-pick]').forEach(function (b) {
+b.onclick = function () { var id = Number(b.getAttribute('data-pick')); picked[id] = !picked[id]; b.className = 'st-chip' + (picked[id] ? ' on F' : ''); };
+});
+var save = function (payload, msg) {
+api('me.player', payload).then(function (me) { S.me = me; closeDrawer(); toast(msg); render(); }, function (e) { toast(e.message, 'error'); });
+};
+d.querySelector('#pp-save').onclick = function () {
+var ids = Object.keys(picked).filter(function (k) { return picked[k]; }).map(Number);
+if (!ids.length) { toast('Tap your player first', 'error'); return; }
+this.disabled = true; this.textContent = 'Saving...';
+save({ players: ids }, 'Thanks! Saved ' + ids.map(function (id) { return player(id).first; }).join(' and ') + ' as your player');
+};
+});
+}
+PAGES.mine = function () {
+var ids = mePlayers();
+if (!ids.length) {
+setTimeout(maybeAskPlayer, 0);
+return html`<div class="page-head"><div><h1>My player</h1><p>Pick your player to see their stats here.</p></div></div>
+<div class="card empty"><button class="btn gold" data-act="my-player">${icon('jersey', 16)} Pick my player</button></div>`;
+}
+if (ids.indexOf(S.minePick) === -1) S.minePick = ids[0];
+var id = S.minePick, p = player(id);
+var st = skaterStats().filter(function (s) { return s.id === id; })[0] || { g: 0, a: 0, pts: 0, pim: 0, st: 0 };
+var aw = awardCounts()[id] || { jersey: 0, chain: 0, shield: 0, total: 0 };
+var myAwards = S.model.awards.filter(function (a) { return a.player === id; });
+var played = S.model.games.filter(function (g) { return g.played; });
+var hidden = played.some(function (g) { return g.statsHidden; }) && !S.coach;
+var gl = goalieStats().filter(function (g) { return g.id === id; })[0];
+var snacks = (S.model.snacks || []).filter(function (s) { return s.player === id; }).sort(function (a, b) { return a.ymd < b.ymd ? -1 : 1; });
+var rows = played.map(function (g) {
+var l = g.lines.filter(function (x) { return x.player === id; })[0] || { g: 0, a: 0, pim: 0 };
+return { g: g, l: l, inNet: g.goalie === id, started: S.coach && g.starters && g.starters.d.concat(g.starters.f).indexOf(id) >= 0 };
+});
+return html`
+<div class="page-head"><div><h1>${pname(p, true)}</h1><p>#${p.num} · My player</p></div>
+${ids.length > 1 ? html`<div class="segmented">${ids.map(function (x) { return html`<button class="${x === id ? 'on' : ''}" data-act="mine-pick" data-id="${x}">${player(x).first}</button>`; })}</div>` : html`<button class="btn small" data-act="my-player">Change</button>`}</div>
+<div class="grid g4">
+<div class="card tile"><div class="k">Goals</div><div class="v">${st.g}</div><div class="s">${played.length} team ${played.length === 1 ? 'game' : 'games'} played</div></div>
+<div class="card tile"><div class="k">Assists</div><div class="v">${st.a}</div><div class="s"> </div></div>
+<div class="card tile"><div class="k">Points</div><div class="v">${st.pts}</div><div class="s">Goals plus assists</div></div>
+<div class="card tile"><div class="k">Awards</div><div class="v">${aw.total}</div><div class="s">${aw.jersey} Jersey · ${aw.chain} Chain · ${aw.shield} Shield</div></div>
+</div>
+<div class="grid g2 gap">
+<div class="card"><div class="card-head"><h2>${icon('chart')} Game by game</h2>${S.coach ? html`<span class="chip">${st.st} starts</span>` : ''}</div>
+${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>Game</th><th class="num">G</th><th class="num">A</th><th class="num">PIM</th></tr></thead><tbody>
+${rows.slice().reverse().map(function (r) { var gp = ymdParts(r.g.ymd); return html`<tr class="tap" data-act="game" data-col="${r.g.col}"><td><b>${r.g.title}</b>${r.g.opp ? ' vs ' + r.g.opp : ''}<div class="small muted">${gp ? gp.dow + ' ' + gp.mon + ' ' + gp.day : ''} · ${resultWord(r.g.result)} ${r.g.gf}-${r.g.ga}${r.inNet ? ' · In net' : ''}${r.started ? ' · Started' : ''}</div></td><td class="num big">${r.l.g}</td><td class="num">${r.l.a}</td><td class="num">${r.l.pim}</td></tr>`; })}
+</tbody></table></div>` : html`<p class="muted">Stats show here after the first game sheet is filled in.</p>`}
+${st.pim ? html`<div class="small muted" style="margin-top:8px">${st.pim} penalty minutes this season</div>` : ''}
+</div>
+<div>
+<div class="card"><div class="card-head"><h2>${icon('trophy')} Awards</h2></div>
+${myAwards.length ? html`<div class="rows">${myAwards.map(function (a) { var d = dayByCol(a.day), dp = d ? ymdParts(d.ymd) : null; return html`<div class="row">${awardIcon(a.award)}<div class="grow">${awardDef(a.award).short}<div class="small muted">${dp ? dp.dow + ' ' + dp.mon + ' ' + dp.day : (d ? d.label : '')}${d ? ' · ' + kindLabel(d) : ''}</div></div></div>`; })}</div>` : html`<p class="muted">No awards yet. Keep moving those feet!</p>`}
+</div>
+${gl ? html`<div class="card gap"><div class="card-head"><h2>${icon('goalie')} In net</h2></div><div class="small">${gl.gp} ${gl.gp === 1 ? 'game' : 'games'} · ${gl.w}-${gl.l}-${gl.t}${gl.so ? ' · ' + gl.so + ' shutout' + (gl.so === 1 ? '' : 's') : ''} · ${gl.ga} goals against · GAA ${gl.gaa === null ? '-' : gl.gaa.toFixed(2)}</div></div>` : ''}
+<div class="card gap"><div class="card-head"><h2>${icon('snack')} Snack dates</h2><button class="btn small" data-go="schedule">Sign up</button></div>
+${snacks.length ? html`<div class="rows">${snacks.map(function (s) { var sp = ymdParts(s.ymd); var e = (S.model.schedule || []).filter(function (x) { return x.ymd === s.ymd && x.start === s.start; })[0]; return html`<div class="row ${s.ymd < S.model.today ? 'muted' : ''}"><span class="jn sm">${sp.day}</span><div class="grow">${sp.dow} ${sp.mon} ${sp.day}${s.start ? ' · ' + s.start : ''}<div class="small muted">${e ? eventTitle(e) : ''}</div></div></div>`; })}</div>` : html`<p class="muted">No snack dates yet. Families pick 2 or 3 on the Schedule page.</p>`}
+</div>
+</div>
+</div>
+${hidden ? html`<p class="small muted gap">Only you and the coaches can see your player's points.</p>` : ''}`;
+};
+ACTIONS['mine-pick'] = function (t) { S.minePick = Number(t.getAttribute('data-id')); render(); };
 function startCounts(exceptCol) {
 var c = {};
 S.model.games.forEach(function (g) { if (g.col === exceptCol || !g.starters) return; g.starters.d.concat(g.starters.f).forEach(function (id) { c[id] = (c[id] || 0) + 1; }); });
