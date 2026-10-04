@@ -1,7 +1,7 @@
 {
   "name": "Knights Hub",
   "short_name": "Knights Hub",
-  "description": "Vaughan Golden Knights U10/U11: schedule, scores and weekly awards.",
+  "description": "CVHA AtoMc Golden Knights U10/U11: schedule, scores and weekly awards.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
