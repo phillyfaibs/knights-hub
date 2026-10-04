@@ -461,6 +461,12 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 .sb-team > span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scoreboard .stepper b { font-size: 28px; min-width: 44px; }
 .sb-colon { font-size: 30px; font-weight: 900; color: var(--txt-dim); }
+
+.next-title { font-size: 18px; font-weight: 850; }
+.next-sep { margin: 14px 0 10px; padding-top: 12px; border-top: 1px solid var(--stroke-2); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--txt-dim); }
+.next-2 .next-date { width: 52px; padding: 6px 0; opacity: .9; }
+.next-2 .next-date b { font-size: 20px; }
+.next-2 .next-title { font-size: 15px; }
 </style>
 </head>
 <body>
@@ -916,13 +922,17 @@ var last = played[played.length - 1];
 var counts = awardCounts();
 var scorers = skaterStats().filter(function (s) { return s.pts > 0; }).sort(function (a, b) { return b.pts - a.pts || b.g - a.g; }).slice(0, 6);
 var maxPts = scorers.length ? scorers[0].pts : 1;
+var nextBlock = function (ev, second) {
+var p = ymdParts(ev.ymd);
+return html`<div class="next ${second ? 'next-2' : ''}"><div class="next-date"><span>${p.mon}</span><b>${p.day}</b><span>${p.dow}</span></div>
+<div><div class="next-title">${kindLabel(ev)}${ev.opp && (ev.kind === 'home' || ev.kind === 'away') ? (ev.kind === 'away' ? ' @ ' : ' vs ') + ev.opp : ''}</div>
+<div class="muted">${eventNow(ev) ? html`<b style="color:var(--accent)">Happening now</b>` : (whenText(ev.ymd) || ev.label)}${ev.start ? ' · ' + ev.start : ''}</div>
+${ev.rink ? html`<div class="small muted" style="display:flex;gap:4px;align-items:center;margin-top:2px">${icon('pin', 13)} ${ev.rink}</div>` : ''}</div></div>`;
+};
 var nextCard = next ? (function () {
-var p = ymdParts(next.ymd), g = gameForDay(next);
+var after = upcoming[1];
 return html`<div class="card"><div class="card-head"><h2>${icon('clock')} Next up</h2><span class="chip">${next.week}</span></div>
-<div class="next"><div class="next-date"><span>${p.mon}</span><b>${p.day}</b><span>${p.dow}</span></div>
-<div><div style="font-size:18px;font-weight:850">${kindLabel(next)}${next.opp && (next.kind === 'home' || next.kind === 'away') ? (next.kind === 'away' ? ' @ ' : ' vs ') + next.opp : ''}</div>
-<div class="muted">${eventNow(next) ? html`<b style="color:var(--accent)">Happening now</b>` : (whenText(next.ymd) || next.label)}${next.start ? ' · ' + next.start : ''}</div>
-${next.rink ? html`<div class="small muted" style="display:flex;gap:4px;align-items:center;margin-top:2px">${icon('pin', 13)} ${next.rink}</div>` : ''}</div></div></div>`;
+${nextBlock(next)}${after ? html`<div class="next-sep">Then</div>${nextBlock(after, true)}` : ''}</div>`;
 })() : html`<div class="card"><div class="card-head"><h2>${icon('clock')} Next up</h2></div><p class="muted">No more dates on the schedule yet.</p></div>`;
 var lastCard = last ? html`<div class="card tap" data-act="game" data-col="${last.col}"><div class="card-head"><h2>${icon('puck')} Last game</h2><span class="chip ${last.result}">${resultWord(last.result)}</span></div>
 ${scoreBlock(last)}<div class="small muted" style="margin-top:8px">${scorerLine(last) || 'No scorers entered'}</div></div>`
@@ -1108,7 +1118,7 @@ return html`
 <div class="card tile"><div class="k">Record</div><div class="v">${t.w}-${t.l}-${t.t}</div><div class="s">Wins, losses, ties</div></div>
 <div class="card tile"><div class="k">Goals for</div><div class="v">${t.gf}</div><div class="s">${t.played ? (t.gf / t.played).toFixed(1) + ' a game' : ' '}</div></div>
 <div class="card tile"><div class="k">Goals against</div><div class="v">${t.ga}</div><div class="s">${t.played ? (t.ga / t.played).toFixed(1) + ' a game' : ' '}</div></div>
-<div class="card tile"><div class="k">Team save %</div><div class="v">${t.svp === null ? '-' : pct(t.svp)}</div><div class="s">${t.sa} shots against</div></div>
+<div class="card tile"><div class="k">Goal difference</div><div class="v">${t.gf - t.ga > 0 ? '+' : ''}${t.gf - t.ga}</div><div class="s">Goals for minus against</div></div>
 </div>
 <div class="grid g3 gap">
 <div class="card span2"><div class="card-head"><h2>${icon('star')} Scoring leaders</h2><span class="small muted">Tap a column to sort</span></div>
@@ -1124,12 +1134,10 @@ ${goalies.length ? goalies.map(function (g) {
 var p = player(g.id);
 return html`<div class="pcard" style="margin-bottom:10px"><div class="pcard-top"><span class="jn">${p ? p.num : ''}</span><div><b>${pname(p, true)}</b><div class="small muted">${g.gp} GP · ${g.w}-${g.l}-${g.t}${g.so ? ' · ' + g.so + ' SO' : ''}</div></div></div>
 <div class="grid g2" style="gap:8px">
-<div class="card tile" style="padding:10px"><div class="k">Save %</div><div class="v" style="font-size:22px">${g.svp === null ? '-' : pct(g.svp)}</div></div>
 <div class="card tile" style="padding:10px"><div class="k">GAA</div><div class="v" style="font-size:22px">${g.gaa === null ? '-' : g.gaa.toFixed(2)}</div></div>
-<div class="card tile" style="padding:10px"><div class="k">Saves</div><div class="v" style="font-size:22px">${g.sa - g.ga}</div></div>
-<div class="card tile" style="padding:10px"><div class="k">Shots</div><div class="v" style="font-size:22px">${g.sa}</div></div>
+<div class="card tile" style="padding:10px"><div class="k">Goals against</div><div class="v" style="font-size:22px">${g.ga}</div></div>
 </div></div>`;
-}) : html`<p class="muted">Goalie numbers show once a game has shots and goals against entered.</p>`}
+}) : html`<p class="muted">Goalie numbers show once a game has a goalie and score entered.</p>`}
 </div>
 </div>
 <div class="card gap"><div class="card-head"><h2>${icon('chart')} Game by game</h2><span class="legend"><span><i class="dot jersey"></i>Knights</span><span><i class="dot" style="background:var(--steel-2)"></i>Opponent</span></span></div>
@@ -1176,10 +1184,9 @@ ${lines.map(function (l) { var pl = player(l.player); return html`<tr><td><span 
 </div>
 <div class="card gap"><div class="card-head"><h2>${icon('goalie')} In net</h2></div>
 ${g.played || gp ? html`<div class="row"><span class="jn sm">${gp ? gp.num : ''}</span><span class="grow">${gp ? pname(gp, true) : (g.goalieName || 'Not set')}</span></div>
-<div class="grid g3" style="gap:8px;margin-top:8px">
-<div class="card tile" style="padding:10px"><div class="k">Shots</div><div class="v" style="font-size:22px">${g.sa === null ? '-' : g.sa}</div></div>
-<div class="card tile" style="padding:10px"><div class="k">Saves</div><div class="v" style="font-size:22px">${g.sa === null || g.ga === null ? '-' : g.sa - g.ga}</div></div>
-<div class="card tile" style="padding:10px"><div class="k">Save %</div><div class="v" style="font-size:22px">${g.sa ? pct((g.sa - g.ga) / g.sa) : '-'}</div></div>
+<div class="grid g2" style="gap:8px;margin-top:8px">
+<div class="card tile" style="padding:10px"><div class="k">Goals against</div><div class="v" style="font-size:22px">${g.ga === null ? '-' : g.ga}</div></div>
+<div class="card tile" style="padding:10px"><div class="k">Shutout</div><div class="v" style="font-size:22px">${g.played && g.ga === 0 ? 'Yes' : g.played ? 'No' : '-'}</div></div>
 </div>` : html`<p class="muted">Not entered yet.</p>`}
 </div>
 ${S.coach ? html`<div class="gap"><button class="btn gold wide" data-act="editgame" data-col="${g.col}">${icon('edit', 16)} ${g.played || g.hasStats ? 'Edit game sheet' : 'Fill in game sheet'}</button></div>` : ''}`);
@@ -1202,9 +1209,6 @@ ${g.ymd && g.ymd !== S.model.today ? html`<div class="note" style="margin-bottom
 <label class="field">Opponent<input id="ge-opp" value="${st.opp}" placeholder="Team name" maxlength="40"></label>
 <label class="field">Goalie<select id="ge-goalie"><option value="">Not set</option>${sortedPlayers().map(function (p) { return html`<option value="${p.id}" ${p.id === st.goalie ? 'selected' : ''}>#${p.num} ${pname(p, true)}</option>`; })}</select></label>
 </div>
-<div class="grid g2 gap" style="gap:10px">
-<div class="field">Shots against (for the goalie)${stepper('sa', st.sa)}</div>
-</div>
 <div class="note gap" id="ge-sum"></div>
 <div class="gap">
 <div class="sheet-row head"><span style="text-align:left">Player</span><span>G</span><span>A</span><span>PIM</span></div>
@@ -1220,7 +1224,7 @@ var goals = 0;
 Object.keys(st.lines).forEach(function (k) { goals += st.lines[k].g; });
 if (!st.usTouched) { st.us = goals; var ue = d.querySelector('[data-val="us"]'); if (ue) { ue.textContent = st.us; ue.className = st.us ? '' : 'zero'; } }
 var res = st.us > st.ga ? 'Win' : st.us < st.ga ? 'Loss' : 'Tie';
-mount(d.querySelector('#ge-sum'), html`Final: Knights <b style="color:var(--txt)">${st.us}</b>, ${st.opp || 'opponent'} <b style="color:var(--txt)">${st.ga}</b> · ${res}. Saves: ${Math.max(0, st.sa - st.ga)}${goals !== st.us ? html`<div class="warn" style="margin-top:4px">Player goals add up to ${goals}. The final score stays at ${st.us}.</div>` : ''}${st.ga > st.sa ? html`<div class="warn" style="margin-top:4px">Goals against is more than shots against.</div>` : ''}`);
+mount(d.querySelector('#ge-sum'), html`Final: Knights <b style="color:var(--txt)">${st.us}</b>, ${st.opp || 'opponent'} <b style="color:var(--txt)">${st.ga}</b> · ${res}.${goals !== st.us ? html`<div class="warn" style="margin-top:4px">Player goals add up to ${goals}. The final score stays at ${st.us}.</div>` : ''}${st.ga > st.sa ? html`<div class="warn" style="margin-top:4px">Goals against is more than shots against.</div>` : ''}`);
 };
 sum();
 d.querySelector('#ge-opp').oninput = function (e) { st.opp = e.target.value; var so = d.querySelector('#sb-opp'); if (so) so.textContent = st.opp || 'Opponent'; sum(); };
