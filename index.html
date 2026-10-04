@@ -467,6 +467,21 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 .next-2 .next-date { width: 52px; padding: 6px 0; opacity: .9; }
 .next-2 .next-date b { font-size: 20px; }
 .next-2 .next-title { font-size: 15px; }
+
+.snack { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--txt-dim); flex-wrap: wrap; }
+.snack b { color: var(--txt); }
+.snack.open { color: var(--accent); font-weight: 750; }
+.snack .btn.small { padding: 4px 10px; font-size: 11px; }
+.snack .link-btn { color: var(--accent); font-weight: 750; padding: 0 2px; }
+.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.st-chip { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 12px; border: 1px solid var(--stroke-2); background: var(--track); color: var(--txt); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; text-align: left; min-width: 0; }
+.st-chip .st-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-chip .st-n { font-size: 11px; color: var(--txt-dim); font-weight: 800; }
+.st-chip .st-pos { width: 16px; text-align: center; font-weight: 900; font-size: 12px; }
+.st-chip.on.D { background: var(--steel); color: #fff; border-color: transparent; }
+.st-chip.on.F { background: var(--gold); color: #111; border-color: transparent; }
+.st-chip.on .st-n { color: inherit; opacity: .8; }
+.st-chip.on .jn { background: rgba(255,255,255,.25); color: inherit; }
 </style>
 </head>
 <body>
@@ -644,7 +659,8 @@ shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6l8-3z"/><path d="
 edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
 goalie: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h4v4H3M21 10h-4v4h4"/><path d="M12 6v12"/>',
 star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
-clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+snack: '<path d="M12 7.5c-1.6-1.4-6.5-1.6-6.5 3.6 0 4.2 2.7 9.4 6.5 9.4s6.5-5.2 6.5-9.4c0-5.2-4.9-5-6.5-3.6z"/><path d="M12 7.5c0-2 .9-3.6 2.6-4.5"/>'
 };
 function icon(name, size) {
 size = size || 18;
@@ -824,8 +840,9 @@ return c;
 }
 function skaterStats() {
 var t = {};
-S.model.players.forEach(function (p) { t[p.id] = { id: p.id, g: 0, a: 0, pts: 0, pim: 0, gp: 0 }; });
+S.model.players.forEach(function (p) { t[p.id] = { id: p.id, g: 0, a: 0, pts: 0, pim: 0, gp: 0, st: 0 }; });
 S.model.games.forEach(function (g) {
+(g.starters ? g.starters.d.concat(g.starters.f) : []).forEach(function (id) { if (t[id]) t[id].st++; });
 g.lines.forEach(function (l) {
 var s = t[l.player]; if (!s) return;
 s.g += l.g; s.a += l.a; s.pim += l.pim; s.pts += l.g + l.a;
@@ -927,7 +944,7 @@ var p = ymdParts(ev.ymd);
 return html`<div class="next ${second ? 'next-2' : ''}"><div class="next-date"><span>${p.mon}</span><b>${p.day}</b><span>${p.dow}</span></div>
 <div><div class="next-title">${kindLabel(ev)}${ev.opp && (ev.kind === 'home' || ev.kind === 'away') ? (ev.kind === 'away' ? ' @ ' : ' vs ') + ev.opp : ''}</div>
 <div class="muted">${eventNow(ev) ? html`<b style="color:var(--accent)">Happening now</b>` : (whenText(ev.ymd) || ev.label)}${ev.start ? ' · ' + ev.start : ''}</div>
-${ev.rink ? html`<div class="small muted" style="display:flex;gap:4px;align-items:center;margin-top:2px">${icon('pin', 13)} ${ev.rink}</div>` : ''}</div></div>`;
+${ev.rink ? html`<div class="small muted" style="display:flex;gap:4px;align-items:center;margin-top:2px">${icon('pin', 13)} ${ev.rink}</div>` : ''}${snackLine(ev)}</div></div>`;
 };
 var nextCard = next ? (function () {
 var after = upcoming[1];
@@ -1122,11 +1139,11 @@ return html`
 </div>
 <div class="grid g3 gap">
 <div class="card span2"><div class="card-head"><h2>${icon('star')} Scoring leaders</h2><span class="small muted">Tap a column to sort</span></div>
-<div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th>${th('g', 'G')}${th('a', 'A')}${th('pts', 'PTS')}${th('pim', 'PIM')}</tr></thead>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th>${th('g', 'G')}${th('a', 'A')}${th('pts', 'PTS')}${th('pim', 'PIM')}${S.coach ? th('st', 'Starts') : ''}</tr></thead>
 <tbody>${rows.map(function (s) {
 var p = player(s.id);
 return html`<tr class="${top > 0 && s[key] === top ? 'lead' : ''}"><td><span class="jn sm">${p.num}</span></td><td>${pname(p, true)}</td>
-<td class="num">${s.g}</td><td class="num">${s.a}</td><td class="num big">${s.pts}</td><td class="num">${s.pim}</td></tr>`;
+<td class="num">${s.g}</td><td class="num">${s.a}</td><td class="num big">${s.pts}</td><td class="num">${s.pim}</td>${S.coach ? html`<td class="num">${s.st}</td>` : ''}</tr>`;
 })}</tbody></table></div>
 </div>
 <div class="card"><div class="card-head"><h2>${icon('goalie')} Goalies</h2></div>
@@ -1182,6 +1199,9 @@ ${g.statsHidden ? html`<p class="muted">Player stats are only shown to coaches.<
 ${lines.map(function (l) { var pl = player(l.player); return html`<tr><td><span class="jn sm">${pl ? pl.num : ''}</span></td><td>${pname(pl, true)}</td><td class="num big">${l.g}</td><td class="num">${l.a}</td><td class="num">${l.pim}</td></tr>`; })}
 </tbody></table></div>` : html`<p class="muted">No player stats entered for this game yet.</p>`}
 </div>
+${S.coach && g.starters && (g.starters.d.length || g.starters.f.length) ? html`<div class="card gap"><div class="card-head"><h2>${icon('star')} Starters</h2></div>
+<div class="small"><b>D:</b> ${g.starters.d.map(function (id) { return pname(player(id)); }).join(', ') || '-'}</div>
+<div class="small" style="margin-top:4px"><b>F:</b> ${g.starters.f.map(function (id) { return pname(player(id)); }).join(', ') || '-'}</div></div>` : ''}
 <div class="card gap"><div class="card-head"><h2>${icon('goalie')} In net</h2></div>
 ${g.played || gp ? html`<div class="row"><span class="jn sm">${gp ? gp.num : ''}</span><span class="grow">${gp ? pname(gp, true) : (g.goalieName || 'Not set')}</span></div>
 <div class="grid g2" style="gap:8px;margin-top:8px">
@@ -1196,7 +1216,9 @@ function openGameEdit(col) {
 var g = S.model.games.filter(function (x) { return x.col === col; })[0];
 if (!g) return;
 var defaultGoalie = g.goalie || (S.model.players.filter(function (p) { return p.first.toLowerCase() === 'jonathan'; })[0] || {}).id || '';
-var st = { opp: g.opp, goalie: defaultGoalie, sa: g.sa === null ? 0 : g.sa, ga: g.ga === null ? 0 : g.ga, us: g.finalSet ? g.gf : g.goalsEntered, usTouched: !!(g.finalSet && g.gf > g.goalsEntered), lines: {} };
+var st = { opp: g.opp, goalie: defaultGoalie, sa: g.sa === null ? 0 : g.sa, ga: g.ga === null ? 0 : g.ga, us: g.finalSet ? g.gf : g.goalsEntered, usTouched: !!(g.finalSet && g.gf > g.goalsEntered), lines: {}, starters: {} };
+if (g.starters) { g.starters.d.forEach(function (id) { st.starters[id] = 'D'; }); g.starters.f.forEach(function (id) { st.starters[id] = 'F'; }); }
+var starts = startCounts(g.col);
 S.model.players.forEach(function (p) { st.lines[p.id] = { g: 0, a: 0, pim: 0 }; });
 g.lines.forEach(function (l) { st.lines[l.player] = { g: l.g, a: l.a, pim: l.pim }; });
 var stepper = function (k, v) { return html`<div class="stepper"><button type="button" data-step="${k}" data-d="-1" aria-label="minus">-</button><b class="${v ? '' : 'zero'}" data-val="${k}">${v}</b><button type="button" data-step="${k}" data-d="1" aria-label="plus">+</button></div>`; };
@@ -1209,6 +1231,12 @@ ${g.ymd && g.ymd !== S.model.today ? html`<div class="note" style="margin-bottom
 <label class="field">Opponent<input id="ge-opp" value="${st.opp}" placeholder="Team name" maxlength="40"></label>
 <label class="field">Goalie<select id="ge-goalie"><option value="">Not set</option>${sortedPlayers().map(function (p) { return html`<option value="${p.id}" ${p.id === st.goalie ? 'selected' : ''}>#${p.num} ${pname(p, true)}</option>`; })}</select></label>
 </div>
+<div class="card gap"><div class="card-head"><h2>${icon('star')} Starters</h2><span class="chip" id="st-count"></span></div>
+<div class="small muted" style="margin:-4px 0 10px">Tap once for D, twice for F, a third time to clear. The small number is how many games they've started so far.</div>
+<div class="st-grid">${sortedPlayers().map(function (p) {
+var pos = st.starters[p.id] || '';
+return html`<button type="button" class="st-chip ${pos ? 'on ' + pos : ''}" data-starter="${p.id}"><span class="st-pos">${pos}</span><span class="jn sm">${p.num}</span><span class="st-name">${pname(p)}</span><span class="st-n">${starts[p.id] || 0}</span></button>`;
+})}</div></div>
 <div class="note gap" id="ge-sum"></div>
 <div class="gap">
 <div class="sheet-row head"><span style="text-align:left">Player</span><span>G</span><span>A</span><span>PIM</span></div>
@@ -1227,6 +1255,24 @@ var res = st.us > st.ga ? 'Win' : st.us < st.ga ? 'Loss' : 'Tie';
 mount(d.querySelector('#ge-sum'), html`Final: Knights <b style="color:var(--txt)">${st.us}</b>, ${st.opp || 'opponent'} <b style="color:var(--txt)">${st.ga}</b> · ${res}.${goals !== st.us ? html`<div class="warn" style="margin-top:4px">Player goals add up to ${goals}. The final score stays at ${st.us}.</div>` : ''}${st.ga > st.sa ? html`<div class="warn" style="margin-top:4px">Goals against is more than shots against.</div>` : ''}`);
 };
 sum();
+var stCount = function () {
+var nd = 0, nf = 0;
+Object.keys(st.starters).forEach(function (k) { if (st.starters[k] === 'D') nd++; else if (st.starters[k] === 'F') nf++; });
+var el = d.querySelector('#st-count');
+el.textContent = 'D ' + nd + '/2 · F ' + nf + '/3';
+el.className = 'chip' + (nd > 2 || nf > 3 ? ' L' : nd === 2 && nf === 3 ? ' W' : '');
+};
+stCount();
+d.querySelectorAll('[data-starter]').forEach(function (b) {
+b.onclick = function () {
+var id = Number(b.getAttribute('data-starter'));
+var pos = { '': 'D', D: 'F', F: '' }[st.starters[id] || ''];
+if (pos) st.starters[id] = pos; else delete st.starters[id];
+b.className = 'st-chip' + (pos ? ' on ' + pos : '');
+b.querySelector('.st-pos').textContent = pos;
+stCount();
+};
+});
 d.querySelector('#ge-opp').oninput = function (e) { st.opp = e.target.value; var so = d.querySelector('#sb-opp'); if (so) so.textContent = st.opp || 'Opponent'; sum(); };
 d.querySelector('#ge-goalie').onchange = function (e) { st.goalie = e.target.value ? Number(e.target.value) : ''; };
 d.querySelectorAll('[data-step]').forEach(function (b) {
@@ -1246,7 +1292,8 @@ if (g.ymd && g.ymd !== S.model.today && !window.confirm('This is ' + g.title + (
 btn.disabled = true; btn.textContent = 'Saving...';
 var lines = Object.keys(st.lines).map(function (k) { var l = st.lines[k]; return { player: Number(k), g: l.g, a: l.a, pim: l.pim }; })
 .filter(function (l) { return l.g || l.a || l.pim; });
-api('game.save', { game: g.col, opp: st.opp, goalie: st.goalie, sa: st.sa, ga: st.ga, us: st.us, them: st.ga, lines: lines }).then(function (m) {
+api('game.save', { game: g.col, opp: st.opp, goalie: st.goalie, sa: st.sa, ga: st.ga, us: st.us, them: st.ga, lines: lines,
+starters: { d: Object.keys(st.starters).filter(function (k) { return st.starters[k] === 'D'; }).map(Number), f: Object.keys(st.starters).filter(function (k) { return st.starters[k] === 'F'; }).map(Number) } }).then(function (m) {
 setModel(m);
 S.dirty = true;
 closeDrawer();
@@ -1273,7 +1320,8 @@ cur.items.push(e);
 return html`
 <div class="page-head"><div><h1>Schedule</h1><p>From the CVHA league calendar, checked every night${S.model.sync && S.model.sync.at ? ' (last checked ' + timeAgo(S.model.sync.at) + ')' : ''}</p></div>
 <div class="segmented"><button class="${all ? '' : 'on'}" data-act="sched" data-all="0">Upcoming</button><button class="${all ? 'on' : ''}" data-act="sched" data-all="1">Whole season</button></div></div>
-<div class="card">${list.length ? months.map(function (mo) {
+${snackSummary()}
+<div class="card gap">${list.length ? months.map(function (mo) {
 var p0 = ymdParts(mo.key + '-01');
 return html`<div class="month-h">${p0.mon} ${mo.key.slice(0, 4)}</div>${mo.items.map(function (e) {
 var p = ymdParts(e.ymd), g = e.game ? gameByYmd[e.ymd] : null;
@@ -1281,7 +1329,7 @@ var past = e.ymd < S.model.today;
 return html`<div class="ev ${past ? 'past' : ''} ${g ? 'tap' : ''}" ${g ? raw('data-act="game" data-col="' + g.col + '"') : ''}>
 <div class="tl-date"><span>${p.dow}</span><b>${p.day}</b></div>
 <div class="grow"><div class="ttl">${eventTitle(e)}</div>
-<div class="meta"><span>${e.start}${e.end ? ' to ' + e.end : ''}</span>${e.rink ? html`<span style="display:inline-flex;gap:3px;align-items:center">${icon('pin', 12)} ${e.rink}</span>` : ''}${e.code ? html`<span>${e.code}</span>` : ''}</div></div>
+<div class="meta"><span>${e.start}${e.end ? ' to ' + e.end : ''}</span>${e.rink ? html`<span style="display:inline-flex;gap:3px;align-items:center">${icon('pin', 12)} ${e.rink}</span>` : ''}${e.code ? html`<span>${e.code}</span>` : ''}</div>${snackLine(e)}</div>
 ${g && g.played ? html`<span class="score-mini">${g.gf}-${g.ga}</span><span class="chip ${g.result}">${g.result}</span>` : e.game ? html`<span class="chip ${e.ha === 'Home' ? 'home' : 'practice'}">${e.ha || 'Game'}</span>` : html`<span class="chip practice">Practice</span>`}
 </div>`;
 })}`;
@@ -1557,6 +1605,65 @@ try { google.accounts.id.disableAutoSelect(); } catch (e) { /* fine */ }
 S.model = null; S.me = null; S.prompted = true; S.signErr = ''; S.needSignIn = true; render();
 };
 /* Practices and games last an hour: once today's event has ended it drops off "Next up" and Upcoming. */
+/* ---------- Snacks: one family per game or practice. Parents sign up; only coaches change or clear. ---------- */
+function snackFor(e) { return (S.model.snacks || []).filter(function (s) { return s.ymd === e.ymd && s.start === e.start; })[0] || null; }
+function snackName(s) { var p = s && s.player ? player(s.player) : null; return (p ? p.first : (s && s.name) || 'A') + "'s family"; }
+function snackLine(e) {
+if (!e || !e.ymd || !e.start) return '';
+var s = snackFor(e), past = e.ymd < S.model.today || eventOver(e);
+if (s) return html`<div class="snack">${icon('snack', 14)}<span>Snacks: <b>${snackName(s)}</b></span>${S.coach && !past ? html`<button class="link-btn" data-act="snack" data-ymd="${e.ymd}" data-start="${e.start}">Change</button>` : ''}</div>`;
+if (past) return '';
+return html`<div class="snack open">${icon('snack', 14)}<span>Snacks needed</span><button class="btn small gold" data-act="snack" data-ymd="${e.ymd}" data-start="${e.start}">${S.coach ? 'Add a family' : "I'll bring snacks"}</button></div>`;
+}
+function snackSummary() {
+var up = (S.model.schedule || []).filter(function (e) { return e.ymd >= S.model.today && !eventOver(e); });
+if (!up.length) return '';
+var open = up.filter(function (e) { return !snackFor(e); });
+var counts = {};
+(S.model.snacks || []).forEach(function (s) { if (s.player) counts[s.player] = (counts[s.player] || 0) + 1; });
+var none = sortedPlayers().filter(function (p) { return !counts[p.id]; });
+var n = open[0], np = n ? ymdParts(n.ymd) : null;
+return html`<div class="card"><div class="card-head"><h2>${icon('snack')} Snack sign-up</h2><span class="chip ${open.length ? '' : 'W'}">${up.length - open.length} of ${up.length} covered</span></div>
+<p class="small muted" style="margin:0 0 10px">One family brings snacks for the team at each game and practice. Pick any open date below. Once you sign up, only a coach can change it.</p>
+${n ? html`<div class="row"><span class="jn sm">${np.day}</span><div class="grow">Next open: ${np.dow} ${np.mon} ${np.day}<div class="small muted">${eventTitle(n)}${n.start ? ' · ' + n.start : ''}</div></div><button class="btn small gold" data-act="snack" data-ymd="${n.ymd}" data-start="${n.start}">${S.coach ? 'Add a family' : "I'll bring snacks"}</button></div>` : html`<p class="small"><b>Every date is covered. Thank you!</b></p>`}
+${S.coach ? html`<div class="small muted" style="margin-top:10px"><b>No date yet:</b> ${none.length ? none.map(function (p) { return pname(p); }).join(', ') : 'every family has one'}</div>` : ''}
+</div>`;
+}
+ACTIONS.snack = function (t) { openSnack(t.getAttribute('data-ymd'), t.getAttribute('data-start')); };
+function openSnack(ymd, start) {
+var e = (S.model.schedule || []).filter(function (x) { return x.ymd === ymd && x.start === start; })[0];
+if (!e) return;
+var s = snackFor(e), p = ymdParts(e.ymd);
+if (s && !S.coach) { toast(snackName(s) + ' already has this date. Ask a coach to change it.'); return; }
+var sel = s ? s.player : (Number(lsGet('kh_family')) || '');
+var label = S.coach ? 'Save' : 'Sign up for snacks';
+openDrawer(html`<h2>Snacks</h2>
+<div class="small muted" style="margin:4px 0 14px">${p.dow} ${p.mon} ${p.day}${e.start ? ' · ' + e.start : ''} · ${eventTitle(e)}${e.rink ? ' · ' + e.rink : ''}</div>
+<label class="field">${S.coach ? 'Family bringing snacks' : 'Which player is yours?'}<select id="sn-player"><option value="">${S.coach ? 'Nobody yet' : 'Pick your player'}</option>${sortedPlayers().map(function (pl) { return html`<option value="${pl.id}" ${pl.id === sel ? 'selected' : ''}>#${pl.num} ${pname(pl, true)}</option>`; })}</select></label>
+<div class="note gap">${S.coach ? (s ? 'Signed up by ' + (s.by || 'a parent') + '. ' : '') + 'Coaches can change or clear this any time.' : 'Your family brings snacks for the whole team that day. Once you sign up, only a coach can change it, so message a coach if plans change.'}</div>
+<div class="gap"><button class="btn gold wide" id="sn-save">${icon('snack', 16)} ${label}</button></div>`, function (d) {
+d.querySelector('#sn-save').onclick = function () {
+var btn = this, pid = Number(d.querySelector('#sn-player').value) || '';
+if (!S.coach && !pid) { toast('Pick your player first', 'error'); return; }
+if (S.coach && !pid && !s) { closeDrawer(); return; }
+btn.disabled = true; btn.textContent = 'Saving...';
+if (!S.coach) lsSet('kh_family', String(pid));
+api(S.coach ? 'snack.set' : 'snack.claim', { ymd: e.ymd, start: e.start, player: pid }).then(function (m) {
+setModel(m); S.dirty = true; closeDrawer();
+toast(pid ? 'Thanks! ' + player(pid).first + "'s family has snacks on " + p.mon + ' ' + p.day : 'Snack date cleared');
+}, function (err) {
+btn.disabled = false; btn.textContent = label;
+toast(err.message, 'error');
+if (err.code === 'TAKEN') { closeDrawer(); refreshModel(true); }
+});
+};
+});
+}
+function startCounts(exceptCol) {
+var c = {};
+S.model.games.forEach(function (g) { if (g.col === exceptCol || !g.starters) return; g.starters.d.concat(g.starters.f).forEach(function (id) { c[id] = (c[id] || 0) + 1; }); });
+return c;
+}
 function eventMins(e) {
 var m = String(e.start || '').match(/(\d{1,2}):(\d{2})\s*([AP])M/i);
 if (!m) return null;
