@@ -455,6 +455,12 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 .signin-logo img { width: min(230px, 62vw); height: auto; filter: drop-shadow(0 10px 24px rgba(0,0,0,.45)); }
 .signin .signin-btn, .signin .signin-note { justify-content: center; }
 .signin .signin-h { margin-top: 10px; }
+
+.scoreboard { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px 12px; border-radius: 18px; background: var(--track); margin-bottom: 8px; }
+.sb-team { display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; min-width: 0; flex: 1; }
+.sb-team > span { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scoreboard .stepper b { font-size: 28px; min-width: 44px; }
+.sb-colon { font-size: 30px; font-weight: 900; color: var(--txt-dim); }
 </style>
 </head>
 <body>
@@ -1024,6 +1030,22 @@ var on = d.querySelector('.daypick .on');
 if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 });
 }
+/* Award taps are saved one at a time, in order, so quick taps never collide on the server. */
+var AWQ = { chain: Promise.resolve(), pending: 0, last: null };
+function queueAward(d, payload, msg) {
+AWQ.pending++;
+AWQ.chain = AWQ.chain.then(function () {
+return api('award.set', payload).then(function (m) {
+AWQ.pending--; AWQ.last = m;
+if (msg) toast(msg);
+if (!AWQ.pending) { setModel(AWQ.last); S.dirty = true; if (document.querySelector('.drawer') === d) drawGive(d); }
+}, function (e) {
+AWQ.pending--;
+toast(e.message, 'error');
+if (!AWQ.pending) refreshModel(true).then(function () { S.dirty = true; if (document.querySelector('.drawer') === d) drawGive(d); });
+});
+});
+}
 function drawGive(d) {
 d = d || document.querySelector('.drawer');
 if (!d) return;
@@ -1059,21 +1081,14 @@ d.querySelectorAll('[data-give]').forEach(function (b) {
 b.onclick = function () {
 var pid = Number(b.getAttribute('data-give')), key = b.getAttribute('data-award');
 var next = cur[pid] === key ? '' : key;
-var before = S.model.awards.slice();
-S.model.awards = S.model.awards.filter(function (w) { return !(w.day === col && w.player === pid); });
+var moved = [];
+if (next) Object.keys(cur).forEach(function (k) { if (Number(k) !== pid && cur[k] === next) moved.push(Number(k)); });
+S.model.awards = S.model.awards.filter(function (w) { return !(w.day === col && (w.player === pid || moved.indexOf(w.player) >= 0)); });
 if (next) S.model.awards.push({ day: col, player: pid, award: next });
 S.dirty = true;
 drawGive(d);
-api('award.set', { day: col, player: pid, award: next }).then(function (m) {
-setModel(m);
-S.dirty = true;
-if (document.querySelector('.drawer') === d) drawGive(d);
-toast(next ? awardDef(next).short + ' for ' + player(pid).first : 'Award removed');
-}, function (e) {
-S.model.awards = before;
-if (document.querySelector('.drawer') === d) drawGive(d);
-toast(e.message, 'error');
-});
+moved.forEach(function (m) { queueAward(d, { day: col, player: m, award: '' }, null); });
+queueAward(d, { day: col, player: pid, award: next }, (next ? awardDef(next).short + ' for ' + player(pid).first : 'Award removed') + (moved.length ? ' (moved from ' + moved.map(function (m) { return player(m).first; }).join(', ') + ')' : ''));
 };
 });
 }
@@ -1174,20 +1189,21 @@ function openGameEdit(col) {
 var g = S.model.games.filter(function (x) { return x.col === col; })[0];
 if (!g) return;
 var defaultGoalie = g.goalie || (S.model.players.filter(function (p) { return p.first.toLowerCase() === 'jonathan'; })[0] || {}).id || '';
-var st = { opp: g.opp, goalie: defaultGoalie, sa: g.sa === null ? 0 : g.sa, ga: g.ga === null ? 0 : g.ga, us: g.finalSet ? g.gf : g.goalsEntered, usTouched: !!g.finalSet, lines: {} };
+var st = { opp: g.opp, goalie: defaultGoalie, sa: g.sa === null ? 0 : g.sa, ga: g.ga === null ? 0 : g.ga, us: g.finalSet ? g.gf : g.goalsEntered, usTouched: !!(g.finalSet && g.gf > g.goalsEntered), lines: {} };
 S.model.players.forEach(function (p) { st.lines[p.id] = { g: 0, a: 0, pim: 0 }; });
 g.lines.forEach(function (l) { st.lines[l.player] = { g: l.g, a: l.a, pim: l.pim }; });
 var stepper = function (k, v) { return html`<div class="stepper"><button type="button" data-step="${k}" data-d="-1" aria-label="minus">-</button><b class="${v ? '' : 'zero'}" data-val="${k}">${v}</b><button type="button" data-step="${k}" data-d="1" aria-label="plus">+</button></div>`; };
 openDrawer(html`<h2>${g.title} game sheet</h2>
-<div class="small muted" style="margin:4px 0 14px">${g.label || 'Date to come'}${g.ha ? ' · ' + g.ha : ''}. Saving writes straight into the Game Stats tab.</div>
+<div class="small muted" style="margin:4px 0 14px">${g.label || 'Date to come'}${g.ha ? ' · ' + g.ha : ''}. Saving writes straight into the Game Stats tab. You can edit it again any time.</div>
+${g.ymd && g.ymd !== S.model.today ? html`<div class="note" style="margin-bottom:12px;border:1px solid var(--loss);color:var(--txt)"><b class="warn">Heads up:</b> this game ${g.ymd < S.model.today ? 'was' : 'is'} on ${g.label}, not today. Make sure it's the right game.</div>` : ''}
+<div class="scoreboard"><div class="sb-team"><span>Golden Knights</span>${stepper('us', st.us)}</div><div class="sb-colon">:</div><div class="sb-team"><span id="sb-opp">${st.opp || 'Opponent'}</span>${stepper('ga', st.ga)}</div></div>
+<div class="small muted" style="text-align:center;margin:0 0 14px">The Knights score follows the goals below unless you change it. The other team's score also counts as goals against for the goalie.</div>
 <div class="grid g2" style="gap:10px">
 <label class="field">Opponent<input id="ge-opp" value="${st.opp}" placeholder="Team name" maxlength="40"></label>
 <label class="field">Goalie<select id="ge-goalie"><option value="">Not set</option>${sortedPlayers().map(function (p) { return html`<option value="${p.id}" ${p.id === st.goalie ? 'selected' : ''}>#${p.num} ${pname(p, true)}</option>`; })}</select></label>
 </div>
 <div class="grid g2 gap" style="gap:10px">
-<div class="field">Final score: Knights${stepper('us', st.us)}</div>
-<div class="field">Final score: ${st.opp || 'Opponent'} (goals against)${stepper('ga', st.ga)}</div>
-<div class="field">Shots against${stepper('sa', st.sa)}</div>
+<div class="field">Shots against (for the goalie)${stepper('sa', st.sa)}</div>
 </div>
 <div class="note gap" id="ge-sum"></div>
 <div class="gap">
@@ -1207,7 +1223,7 @@ var res = st.us > st.ga ? 'Win' : st.us < st.ga ? 'Loss' : 'Tie';
 mount(d.querySelector('#ge-sum'), html`Final: Knights <b style="color:var(--txt)">${st.us}</b>, ${st.opp || 'opponent'} <b style="color:var(--txt)">${st.ga}</b> · ${res}. Saves: ${Math.max(0, st.sa - st.ga)}${goals !== st.us ? html`<div class="warn" style="margin-top:4px">Player goals add up to ${goals}. The final score stays at ${st.us}.</div>` : ''}${st.ga > st.sa ? html`<div class="warn" style="margin-top:4px">Goals against is more than shots against.</div>` : ''}`);
 };
 sum();
-d.querySelector('#ge-opp').oninput = function (e) { st.opp = e.target.value; sum(); };
+d.querySelector('#ge-opp').oninput = function (e) { st.opp = e.target.value; var so = d.querySelector('#sb-opp'); if (so) so.textContent = st.opp || 'Opponent'; sum(); };
 d.querySelector('#ge-goalie').onchange = function (e) { st.goalie = e.target.value ? Number(e.target.value) : ''; };
 d.querySelectorAll('[data-step]').forEach(function (b) {
 b.onclick = function () {
@@ -1222,6 +1238,7 @@ sum();
 });
 d.querySelector('#ge-save').onclick = function () {
 var btn = this;
+if (g.ymd && g.ymd !== S.model.today && !window.confirm('This is ' + g.title + (g.opp ? ' vs ' + g.opp : '') + ' on ' + g.label + ', not today. Save it anyway?')) return;
 btn.disabled = true; btn.textContent = 'Saving...';
 var lines = Object.keys(st.lines).map(function (k) { var l = st.lines[k]; return { player: Number(k), g: l.g, a: l.a, pim: l.pim }; })
 .filter(function (l) { return l.g || l.a || l.pim; });
