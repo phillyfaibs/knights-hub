@@ -150,6 +150,7 @@ flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; p
 border-radius: 16px; font-size: 11px; font-weight: 700; color: var(--txt-dim); cursor: pointer;
 }
 .tabbar button.active { color: var(--txt); background: var(--hover); }
+@media (max-width: 420px) { .tabbar { left: 6px; right: 6px; padding: 5px; } .tabbar button { font-size: 10px; letter-spacing: -.01em; min-width: 0; } }
 .tabbar button.active svg { color: var(--accent); }
 }
 .card {
@@ -660,6 +661,7 @@ edit: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
 goalie: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h4v4H3M21 10h-4v4h4"/><path d="M12 6v12"/>',
 star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
 clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+chat: '<path d="M20.5 11.6a8.5 8.5 0 0 1-12.4 7.6L3.5 20.5l1.3-4.4A8.5 8.5 0 1 1 20.5 11.6z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5"/>',
 snack: '<path d="M12 7.5c-1.6-1.4-6.5-1.6-6.5 3.6 0 4.2 2.7 9.4 6.5 9.4s6.5-5.2 6.5-9.4c0-5.2-4.9-5-6.5-3.6z"/><path d="M12 7.5c0-2 .9-3.6 2.6-4.5"/>'
 };
 function icon(name, size) {
@@ -738,10 +740,12 @@ var NAV = [
 { name: 'stats', label: 'Stats', icon: 'chart' },
 { name: 'games', label: 'Games', icon: 'puck' },
 { name: 'schedule', label: 'Schedule', icon: 'calendar' },
+{ name: 'whatsapp', label: 'WhatsApp', icon: 'chat' },
 { name: 'settings', label: 'Settings', icon: 'gear', admin: true }
 ];
 function navItems() { return NAV.filter(function (n) { return !n.admin || S.admin; }); }
 function go(name) {
+if (name === 'whatsapp') { openWhatsApp(); return; }
 if (!PAGES[name]) name = 'home';
 S.route = name;
 try { if (window.TRK) trkPage(); } catch (e) { toast('trk ' + e.message, 'error'); }
@@ -1409,7 +1413,10 @@ ${sync.changes && sync.changes.length ? html`<ul class="changes">${sync.changes.
 
 <div class="card"><div class="card-head"><h2>${icon('lock')} What parents see</h2></div>
 <label class="switch"><input type="checkbox" data-act="parent-stats" ${d.settings.parentStats ? 'checked' : ''}> Parents can see goals, assists and penalty minutes</label>
-<p class="small muted">When this is off, parents still see scores, results, the schedule and awards, but not individual player stats.</p></div>
+<p class="small muted">When this is off, parents still see scores, results, the schedule and awards, but not individual player stats.</p>
+<label class="field gap">Team WhatsApp group link<input id="wa-link" value="${d.settings.whatsapp || ''}" placeholder="https://chat.whatsapp.com/..." inputmode="url"></label>
+<p class="small muted">The WhatsApp menu item opens this link. Until it's set, it tells people the group is coming soon.</p>
+<button class="btn small" data-act="wa-save">${icon('chat', 14)} Save link</button></div>
 </div>
 
 <div class="card gap"><div class="card-head"><h2>${icon('cake')} Birthdays</h2><span class="chip">Coaches and admin only</span></div>
@@ -1453,6 +1460,15 @@ ACTIONS['sync-now'] = function (t) {
 t.disabled = true; t.textContent = 'Checking...';
 api('admin.sync').then(function () { toast('Schedule checked'); return loadSettings(); }, function (e) { toast(e.message, 'error'); t.disabled = false; });
 };
+ACTIONS['wa-save'] = function (t) {
+var v = document.getElementById('wa-link').value.trim();
+adminCall('admin.settings.save', { whatsapp: v }, v ? 'WhatsApp link saved' : 'WhatsApp link removed', t);
+};
+function openWhatsApp() {
+var url = S.model && S.model.whatsapp;
+if (url) window.open(url, '_blank', 'noopener');
+else toast('The team WhatsApp group is coming soon.');
+}
 ACTIONS['parent-stats'] = function (t) {
 adminCall('admin.settings.save', { parentStats: t.checked }, t.checked ? 'Parents can see player stats' : 'Player stats hidden from parents');
 };
