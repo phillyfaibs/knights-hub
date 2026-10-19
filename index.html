@@ -720,7 +720,11 @@ var t = effectiveTheme();
 return html`<div class="theme-switch" role="group" aria-label="Light or dark mode"><button class="${t === 'light' ? 'on' : ''}" data-act="theme-light">${icon('sun', 15)} Light</button><button class="${t === 'dark' ? 'on' : ''}" data-act="theme-dark">${icon('moon', 15)} Dark</button></div>`;
 }
 function pageFoot() {
-return html`<footer class="page-foot">${themeSwitch()}<span class="small muted">Knights Hub${S.me ? ' · ' + S.me.email : ''}</span>${welcomeDone() ? html`<button class="link-btn" data-act="welcome-open">Show welcome tips</button>` : ''}${S.me && S.model ? html`<button class="link-btn" data-act="my-player">${mePlayers().length ? 'My player: ' + mePlayers().map(function (id) { return player(id).first; }).join(', ') : 'Pick my player'}</button>` : ''}<button class="link-btn" data-act="sign-out">Sign out</button></footer>`;
+return html`<footer class="page-foot">${themeSwitch()}<span class="small muted">Knights Hub${S.me ? ' · ' + S.me.email : ''}</span>${welcomeDone() ? html`<button class="link-btn" data-act="welcome-open">Show welcome tips</button>` : ''}${S.me && S.model ? html`<button class="link-btn" data-act="my-player">${mePlayers().length ? 'My player: ' + mePlayers().map(function (id) { return player(id).first; }).join(', ') : 'Pick my player'}</button>` : ''}<button class="link-btn" data-act="sign-out">Sign out</button>${sponsorLine()}</footer>`;
+}
+var SPONSOR_URL = 'https:' + '/' + '/madebyphilament.ca/?utm_source=knights-hub&utm_medium=referral&utm_campaign=golden-knights-sponsor&utm_content=hub-footer';
+function sponsorLine() {
+return html`<div class="small muted" style="margin-top:6px;text-align:center">Website sponsored by <a href="${SPONSOR_URL}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:750">madebyphilament.ca</a></div>`;
 }
 function eventTitle(e) {
 if (e.game) return (e.ex ? 'Exhibition' : 'Game') + (e.opp ? (e.ha === 'Away' ? ' @ ' : ' vs ') + e.opp : '');
