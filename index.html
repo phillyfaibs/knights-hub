@@ -494,6 +494,11 @@ body.signed-out .sidebar, body.signed-out .tabbar, body.signed-out .topbar { dis
 .st-chip.on.F { background: var(--gold); color: #111; border-color: transparent; }
 .st-chip.on .st-n { color: inherit; opacity: .8; }
 .st-chip.on .jn { background: rgba(255,255,255,.25); color: inherit; }
+
+/* Solid top bar so the iPhone status bar area isn't see-through and blurry in the home screen app */
+.topbar { background: rgba(247,243,234,.98); -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .topbar { background: rgba(17,18,21,.98); } }
+:root[data-theme="dark"] .topbar { background: rgba(17,18,21,.98); }
 </style>
 </head>
 <body>
