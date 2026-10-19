@@ -739,7 +739,7 @@ var NAV = [
 { name: 'mine', label: 'My player', icon: 'jersey' },
 { name: 'awards', label: 'Awards', icon: 'trophy' },
 { name: 'stats', label: 'Stats', icon: 'chart' },
-{ name: 'games', label: 'Games', icon: 'puck' },
+{ name: 'games', label: 'Games & Standings', short: 'Games', icon: 'puck' },
 { name: 'schedule', label: 'Schedule', icon: 'calendar' },
 { name: 'whatsapp', label: 'WhatsApp', icon: 'chat', top: true },
 { name: 'settings', label: 'Settings', icon: 'gear', admin: true }
@@ -780,7 +780,7 @@ return html`<button class="side-item ${S.route === n.name ? 'active' : ''}" data
 })}`;
 mount('nav', navHtml);
 mount('tabbar', html`${NAV.filter(function (n) { return !n.admin && !n.top; }).map(function (n) {
-return html`<button class="${S.route === n.name ? 'active' : ''}" data-go="${n.name}">${icon(n.icon, 20)}<span>${n.label}</span></button>`;
+return html`<button class="${S.route === n.name ? 'active' : ''}" data-go="${n.name}">${icon(n.icon, 20)}<span>${n.short || n.label}</span></button>`;
 })}`);
 var themeBtn = html`<button class="icon-btn" data-act="theme" aria-label="Light or dark">${icon(effectiveTheme() === 'dark' ? 'sun' : 'moon', 16)}</button>`;
 var badge = S.me ? (S.admin ? html`<span class="coach-badge admin-badge">${icon('star', 12)} Admin</span>` : S.coach ? html`<span class="coach-badge">${icon('star', 12)} Coach</span>` : html`<span class="chip">Parent view</span>`) : '';
@@ -1176,7 +1176,7 @@ PAGES.games = function () {
 var games = S.model.games;
 var t = teamSummary();
 return html`
-<div class="page-head"><div><h1>Games</h1><p>${t.w}-${t.l}-${t.t} · ${games.length - t.played} still to play</p></div>
+<div class="page-head"><div><h1>Games &amp; Standings</h1><p>${t.w}-${t.l}-${t.t} · ${games.length - t.played} still to play</p></div>
 <button class="btn small" data-act="refresh">${icon('refresh', 14)} Refresh</button></div>
 ${standingsCard()}
 <div class="games gap">${games.map(function (g) {
