@@ -969,6 +969,7 @@ ${welcomeCard()}
 <div><b>${t.ga}</b><span>Goals against</span></div>
 <div><b>${m.awards.length}</b><span>Awards given</span></div>
 </div>
+${standingLine()}
 <div class="motto">Move your feet. Good things happen when you move your feet.</div>
 </div>
 <div class="grid g2 gap">${nextCard}${lastCard}</div>
@@ -1177,7 +1178,8 @@ var t = teamSummary();
 return html`
 <div class="page-head"><div><h1>Games</h1><p>${t.w}-${t.l}-${t.t} · ${games.length - t.played} still to play</p></div>
 <button class="btn small" data-act="refresh">${icon('refresh', 14)} Refresh</button></div>
-<div class="games">${games.map(function (g) {
+${standingsCard()}
+<div class="games gap">${games.map(function (g) {
 var p = ymdParts(g.ymd);
 var soon = g.ymd ? whenText(g.ymd) : '';
 return html`<div class="game ${g.played ? '' : 'upcoming'}" data-act="game" data-col="${g.col}">
@@ -1774,6 +1776,30 @@ ${snacks.length ? html`<div class="rows">${snacks.map(function (s) { var sp = ym
 ${hidden ? html`<p class="small muted gap">Only you and the coaches can see your player's points.</p>` : ''}`;
 };
 ACTIONS['mine-pick'] = function (t) { S.minePick = Number(t.getAttribute('data-id')); render(); };
+/* ---------- League standings, read nightly from the CVHA site by the data service ---------- */
+function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+function ourStanding() {
+var st = S.model.standings;
+if (!st || !st.rows) return null;
+for (var i = 0; i < st.rows.length; i++) { if (/golden knights/i.test(st.rows[i].team)) return { rank: i + 1, of: st.rows.length, row: st.rows[i] }; }
+return null;
+}
+function standingLine() {
+var o = ourStanding();
+if (!o || !o.row.gp) return '';
+return html`<div class="small" style="margin:10px 0 0;color:var(--gold-2);font-weight:750;cursor:pointer" data-go="games">${icon('trophy', 13)} ${ordinal(o.rank)} of ${o.of} in the league · ${o.row.pts} pts</div>`;
+}
+function standingsCard() {
+var st = S.model.standings;
+if (!st || !st.rows || !st.rows.length) return '';
+var none = st.rows.every(function (r) { return !r.gp; });
+var src = 'https:' + '/' + '/vaughanhockey.com/Leagues/5325/Standings/';
+return html`<div class="card"><div class="card-head"><h2>${icon('trophy')} League standings</h2><span class="small muted">${st.at ? 'Updated ' + timeAgo(st.at) : ''}</span></div>
+<div class="table-wrap"><table><thead><tr><th class="num">#</th><th>Team</th><th class="num">GP</th><th class="num">W</th><th class="num">L</th><th class="num">T</th><th class="num">PTS</th><th class="num">GF</th><th class="num">GA</th><th class="num">+/-</th><th class="num">Streak</th></tr></thead><tbody>
+${st.rows.map(function (r, i) { var us = /golden knights/i.test(r.team); return html`<tr class="${us ? 'lead' : ''}"><td class="num">${i + 1}</td><td>${us ? html`<b>${r.team}</b>` : r.team}</td><td class="num">${r.gp}</td><td class="num">${r.w}</td><td class="num">${r.l}</td><td class="num">${r.t}</td><td class="num big">${r.pts}</td><td class="num">${r.gf}</td><td class="num">${r.ga}</td><td class="num">${r.diff > 0 ? '+' : ''}${r.diff}</td><td class="num">${r.strk || '-'}</td></tr>`; })}
+</tbody></table></div>
+<div class="small muted" style="margin-top:8px">${none ? 'Regular season games start Sun Nov 1. Exhibition games don\'t count toward the standings. ' : ''}From the CVHA league site, checked every night. <a href="${src}" target="_blank" rel="noopener" style="color:var(--accent)">See it on vaughanhockey.com</a></div></div>`;
+}
 function startCounts(exceptCol) {
 var c = {};
 S.model.games.forEach(function (g) { if (g.col === exceptCol || !g.starters) return; g.starters.d.concat(g.starters.f).forEach(function (id) { c[id] = (c[id] || 0) + 1; }); });
