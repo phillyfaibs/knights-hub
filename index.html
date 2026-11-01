@@ -881,8 +881,9 @@ function teamSummary(which) {
 var w = 0, l = 0, tie = 0, gf = 0, ga = 0, sa = 0, played = 0;
 S.model.games.forEach(function (g) {
 if (!g.played) return;
-if (which === 'reg' && g.ex) return;
-if (which === 'ex' && !g.ex) return;
+var ex = g.ex || /^EX/i.test(g.code || '') || /\[EX-/i.test(g.opp || '');
+if (which === 'reg' && ex) return;
+if (which === 'ex' && !ex) return;
 played++; gf += g.gf; ga += g.ga; sa += g.sa || 0;
 if (g.result === 'W') w++; else if (g.result === 'L') l++; else tie++;
 });
