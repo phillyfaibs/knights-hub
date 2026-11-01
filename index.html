@@ -877,10 +877,12 @@ s.g += l.g; s.a += l.a; s.pim += l.pim; s.pts += l.g;
 });
 return S.model.players.map(function (p) { return t[p.id]; });
 }
-function teamSummary() {
+function teamSummary(which) {
 var w = 0, l = 0, tie = 0, gf = 0, ga = 0, sa = 0, played = 0;
 S.model.games.forEach(function (g) {
 if (!g.played) return;
+if (which === 'reg' && g.ex) return;
+if (which === 'ex' && !g.ex) return;
 played++; gf += g.gf; ga += g.ga; sa += g.sa || 0;
 if (g.result === 'W') w++; else if (g.result === 'L') l++; else tie++;
 });
@@ -958,7 +960,7 @@ return html`<div class="row"><span class="jn sm">${b.num}</span><span class="gro
 })}</div></div>`;
 }
 PAGES.home = function () {
-var m = S.model, t = teamSummary();
+var m = S.model, t = teamSummary(), tr = teamSummary('reg'), tx = teamSummary('ex');
 var upcoming = m.days.filter(function (d) { return d.ymd && d.ymd >= m.today && d.kind !== 'none' && d.kind !== 'tbd' && !eventOver(d); });
 var next = upcoming[0];
 var played = m.games.filter(function (g) { return g.played; });
@@ -986,11 +988,12 @@ ${welcomeCard()}
 <div class="card hero">
 <div class="hero-top"><div class="mark logo"><img src="logo-160.webp" alt="Golden Knights logo"></div><div><div class="eyebrow">${S.boot.app.division} · ${S.boot.app.season}</div><h1>${S.boot.app.team}</h1></div></div>
 <div class="record">
-<div><b class="gold">${t.w}-${t.l}-${t.t}</b><span>Record</span></div>
-<div><b>${t.gf}</b><span>Goals for</span></div>
-<div><b>${t.ga}</b><span>Goals against</span></div>
+<div><b class="gold">${tr.w}-${tr.l}-${tr.t}</b><span>Record</span></div>
+<div><b>${tr.gf}</b><span>Goals for</span></div>
+<div><b>${tr.ga}</b><span>Goals against</span></div>
 <div><b>${m.awards.length}</b><span>Awards given</span></div>
 </div>
+<div class="small" style="color:rgba(244,239,227,.7);margin-top:8px">Regular season${tx.played ? ' · Exhibition ' + tx.w + '-' + tx.l + '-' + tx.t : ''}</div>
 ${standingLine()}
 <div class="motto">Move your feet. Good things happen when you move your feet.</div>
 </div>
@@ -1148,7 +1151,7 @@ queueAward(d, { day: col, player: pid, award: next }, (next ? awardDef(next).sho
 });
 }
 PAGES.stats = function () {
-var t = teamSummary();
+var t = teamSummary('reg'), tx = teamSummary('ex');
 var key = S.sort === 'st' ? 'st' : 'g';
 var rows = skaterStats().sort(function (a, b) { return b[key] - a[key] || b.pts - a.pts || b.g - a.g; });
 var top = rows.length ? rows[0][key] : 0;
@@ -1157,7 +1160,7 @@ var played = S.model.games.filter(function (g) { return g.played; });
 var maxG = Math.max.apply(null, [1].concat(played.map(function (g) { return Math.max(g.gf, g.ga); })));
 var th = function (k, label) { return html`<th class="num sort ${key === k ? 'on' : ''}" data-act="sort" data-key="${k}">${label}</th>`; };
 return html`
-<div class="page-head"><div><h1>Team stats</h1><p>${t.played} ${t.played === 1 ? 'game' : 'games'} played</p></div>
+<div class="page-head"><div><h1>Team stats</h1><p>Regular season: ${t.played} ${t.played === 1 ? 'game' : 'games'} played${tx.played ? ' · Exhibition: ' + tx.w + '-' + tx.l + '-' + tx.t + ', ' + tx.gf + ' GF, ' + tx.ga + ' GA' : ''}</p></div>
 <button class="btn small" data-act="refresh">${icon('refresh', 14)} Refresh</button></div>
 <div class="grid g4">
 <div class="card tile"><div class="k">Record</div><div class="v">${t.w}-${t.l}-${t.t}</div><div class="s">Wins, losses, ties</div></div>
@@ -1196,9 +1199,9 @@ return html`<div class="gcol tap" data-act="game" data-col="${g.col}" title="${g
 ACTIONS.sort = function (t) { S.sort = t.getAttribute('data-key'); render(); };
 PAGES.games = function () {
 var games = S.model.games;
-var t = teamSummary();
+var t = teamSummary('reg'), all = teamSummary();
 return html`
-<div class="page-head"><div><h1>Games &amp; Standings</h1><p>${t.w}-${t.l}-${t.t} · ${games.length - t.played} still to play</p></div>
+<div class="page-head"><div><h1>Games &amp; Standings</h1><p>Regular season ${t.w}-${t.l}-${t.t} · ${games.length - all.played} still to play</p></div>
 <button class="btn small" data-act="refresh">${icon('refresh', 14)} Refresh</button></div>
 ${standingsCard()}
 <div class="games gap">${games.map(function (g) {
