@@ -877,11 +877,12 @@ s.g += l.g; s.a += l.a; s.pim += l.pim; s.pts += l.g;
 });
 return S.model.players.map(function (p) { return t[p.id]; });
 }
+function isExGame(g) { return !!(g.ex || /^EX/i.test(g.code || '') || /\[EX-/i.test(g.opp || '')); }
 function teamSummary(which) {
 var w = 0, l = 0, tie = 0, gf = 0, ga = 0, sa = 0, played = 0;
 S.model.games.forEach(function (g) {
 if (!g.played) return;
-var ex = g.ex || /^EX/i.test(g.code || '') || /\[EX-/i.test(g.opp || '');
+var ex = isExGame(g);
 if (which === 'reg' && ex) return;
 if (which === 'ex' && !ex) return;
 played++; gf += g.gf; ga += g.ga; sa += g.sa || 0;
@@ -892,7 +893,7 @@ return { w: w, l: l, t: tie, gf: gf, ga: ga, sa: sa, played: played, svp: sa ? (
 function goalieStats() {
 var by = {};
 S.model.games.forEach(function (g) {
-if (!g.played || !g.goalie) return;
+if (!g.played || !g.goalie || isExGame(g)) return;
 var s = by[g.goalie] || (by[g.goalie] = { id: g.goalie, gp: 0, sa: 0, ga: 0, w: 0, l: 0, t: 0, so: 0 });
 s.gp++; s.sa += g.sa || 0; s.ga += g.ga || 0;
 if (g.result === 'W') s.w++; else if (g.result === 'L') s.l++; else s.t++;
@@ -1178,7 +1179,7 @@ return html`<tr class="${top > 0 && s[key] === top ? 'lead' : ''}"><td><span cla
 <td class="num big">${s.g}</td>${S.coach ? html`<td class="num">${s.st}</td>` : ''}</tr>`;
 })}</tbody></table></div>
 </div>
-<div class="card"><div class="card-head"><h2>${icon('goalie')} Goalies</h2></div>
+<div class="card"><div class="card-head"><h2>${icon('goalie')} Goalies</h2><span class="small muted">Regular season</span></div>
 ${goalies.length ? goalies.map(function (g) {
 var p = player(g.id);
 return html`<div class="pcard" style="margin-bottom:10px"><div class="pcard-top"><span class="jn">${p ? p.num : ''}</span><div><b>${pname(p, true)}</b><div class="small muted">${g.gp} GP · ${g.w}-${g.l}-${g.t}${g.so ? ' · ' + g.so + ' SO' : ''}</div></div></div>
@@ -1186,7 +1187,7 @@ return html`<div class="pcard" style="margin-bottom:10px"><div class="pcard-top"
 <div class="card tile" style="padding:10px"><div class="k">GAA</div><div class="v" style="font-size:22px">${g.gaa === null ? '-' : g.gaa.toFixed(2)}</div></div>
 <div class="card tile" style="padding:10px"><div class="k">Goals against</div><div class="v" style="font-size:22px">${g.ga}</div></div>
 </div></div>`;
-}) : html`<p class="muted">Goalie numbers show once a game has a goalie and score entered.</p>`}
+}) : html`<p class="muted">Goalie numbers show once a regular season game has a goalie and score entered.</p>`}
 </div>
 </div>
 <div class="card gap"><div class="card-head"><h2>${icon('chart')} Game by game</h2><span class="legend"><span><i class="dot jersey"></i>Knights</span><span><i class="dot" style="background:var(--steel-2)"></i>Opponent</span></span></div>
@@ -1790,7 +1791,7 @@ ${rows.slice().reverse().map(function (r) { var gp = ymdParts(r.g.ymd); return h
 <div class="card"><div class="card-head"><h2>${icon('trophy')} Awards</h2></div>
 ${myAwards.length ? html`<div class="rows">${myAwards.map(function (a) { var d = dayByCol(a.day), dp = d ? ymdParts(d.ymd) : null; return html`<div class="row">${awardIcon(a.award)}<div class="grow">${awardDef(a.award).short}<div class="small muted">${dp ? dp.dow + ' ' + dp.mon + ' ' + dp.day : (d ? d.label : '')}${d ? ' · ' + kindLabel(d) : ''}</div></div></div>`; })}</div>` : html`<p class="muted">No awards yet. Keep moving those feet!</p>`}
 </div>
-${gl ? html`<div class="card gap"><div class="card-head"><h2>${icon('goalie')} In net</h2></div><div class="small">${gl.gp} ${gl.gp === 1 ? 'game' : 'games'} · ${gl.w}-${gl.l}-${gl.t}${gl.so ? ' · ' + gl.so + ' shutout' + (gl.so === 1 ? '' : 's') : ''} · ${gl.ga} goals against · GAA ${gl.gaa === null ? '-' : gl.gaa.toFixed(2)}</div></div>` : ''}
+${gl ? html`<div class="card gap"><div class="card-head"><h2>${icon('goalie')} In net</h2><span class="small muted">Regular season</span></div><div class="small">${gl.gp} ${gl.gp === 1 ? 'game' : 'games'} · ${gl.w}-${gl.l}-${gl.t}${gl.so ? ' · ' + gl.so + ' shutout' + (gl.so === 1 ? '' : 's') : ''} · ${gl.ga} goals against · GAA ${gl.gaa === null ? '-' : gl.gaa.toFixed(2)}</div></div>` : ''}
 <div class="card gap"><div class="card-head"><h2>${icon('snack')} Snack dates</h2><button class="btn small" data-go="schedule">Sign up</button></div>
 ${snacks.length ? html`<div class="rows">${snacks.map(function (s) { var sp = ymdParts(s.ymd); var e = (S.model.schedule || []).filter(function (x) { return x.ymd === s.ymd && x.start === s.start; })[0]; return html`<div class="row ${s.ymd < S.model.today ? 'muted' : ''}"><span class="jn sm">${sp.day}</span><div class="grow">${sp.dow} ${sp.mon} ${sp.day}${s.start ? ' · ' + s.start : ''}<div class="small muted">${e ? eventTitle(e) : ''}</div></div></div>`; })}</div>` : html`<p class="muted">No snack dates yet. Families pick 2 or 3 on the Schedule page.</p>`}
 </div>
