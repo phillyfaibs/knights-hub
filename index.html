@@ -1629,23 +1629,23 @@ function welcomeCard() {
 if (welcomeDone()) return '';
 var nm = S.me && S.me.name && S.me.name !== 'Owner' ? S.me.name.split(/[\s(]/)[0] : '';
 var tiles = [
+{ go: 'mine', ic: 'jersey', t: 'My player', d: 'Goals, awards and your snack days' },
+{ go: 'schedule', ic: 'snack', t: 'Snack days', d: 'Pick your family’s dates on the Schedule' },
 { go: 'schedule', ic: 'calendar', t: 'Schedule', d: 'Dates, times and rinks' },
-{ go: 'games', ic: 'puck', t: 'Games', d: 'Scores and who scored' },
-{ go: 'awards', ic: 'trophy', t: 'Awards', d: 'This week’s winners' },
-{ go: 'stats', ic: 'chart', t: 'Stats', d: 'Goals and goalies' }
+{ go: 'games', ic: 'puck', t: 'Games & Standings', d: 'Scores and the league table' }
 ];
 return html`<div class="card welcome">
 <div class="welcome-head"><div><div class="eyebrow">Welcome${nm ? ', ' + nm : ''}</div>
-<h2>Our season, all in one place</h2>
-<p class="muted">Schedule, scores and weekly awards for the Golden Knights. It updates by itself, so check back after every game.</p></div>
+<h2>Welcome to the Knights Hub</h2>
+<p class="muted">Everything for our season in one place. It updates by itself after every game.</p></div>
 <button class="icon-btn" data-act="welcome-close" aria-label="Hide welcome">${icon('x', 14)}</button></div>
 <div class="wtiles">${tiles.map(function (x) { return html`<button class="wtile" data-go="${x.go}"><span class="wi">${icon(x.ic, 17)}</span><span class="wt"><b>${x.t}</b><span class="wd">${x.d}</span></span></button>`; })}</div>
 <div class="wtips">
 <div class="d-only">${icon('home', 16)}<span>Use the menu on the left to get around.</span></div>
-<div class="m-only">${icon('star', 16)}<span>Tip: tap your browser's Share or menu button, then Add to Home Screen. It opens like an app.</span></div>
+<div class="m-only">${icon('star', 16)}<span>Tip: tap Share (or your browser menu), then Add to Home Screen. It opens like an app.</span></div>
 <div>${icon('lock', 16)}<span>Private to team families. ${S.coach ? 'Parents see players by jersey number and first name only.' : 'Players are shown by jersey number and first name only.'}</span></div>
 </div>
-<div class="welcome-foot"><span class="small muted">Questions? Ask Coach Phil.</span><button class="btn gold small" data-act="welcome-close">Got it</button></div>
+<div class="welcome-foot"><span class="small muted">Questions? Ask Coach Phil.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-go="whatsapp">${icon('chat', 14)} Team WhatsApp</button><button class="btn gold small" data-act="welcome-close">Got it</button></span></div>
 </div>`;
 }
 ACTIONS['sign-out'] = function () {
